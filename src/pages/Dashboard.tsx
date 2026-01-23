@@ -147,7 +147,7 @@ const Dashboard = () => {
   };
 
   const isLowStock = (current: number, minimum: number) => {
-    return current < minimum;
+    return current <= minimum;
   };
 
   if (loading) {
