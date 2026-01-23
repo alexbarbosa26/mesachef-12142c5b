@@ -36,6 +36,9 @@ import {
   Settings,
   Loader2,
   AlertTriangle,
+  Package,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays, parseISO } from 'date-fns';
@@ -156,6 +159,15 @@ const Dashboard = () => {
       </DashboardLayout>
     );
   }
+
+  // Calculate summary stats
+  const totalItems = stockItems.length;
+  const lowStockItems = stockItems.filter((item) =>
+    isLowStock(item.current_quantity, item.minimum_stock)
+  ).length;
+  const expiringItems = stockItems.filter((item) =>
+    isExpiringSoon(item.expiry_date)
+  ).length;
 
   return (
     <DashboardLayout>
@@ -338,6 +350,61 @@ const Dashboard = () => {
               </Dialog>
             </div>
           )}
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                <Package className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total de Itens</p>
+                <p className="text-2xl font-bold">{totalItems}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={cn(lowStockItems > 0 && "border-yellow-500/50")}>
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className={cn(
+                "flex items-center justify-center w-12 h-12 rounded-full",
+                lowStockItems > 0 ? "bg-yellow-500/10" : "bg-muted"
+              )}>
+                <AlertCircle className={cn(
+                  "w-6 h-6",
+                  lowStockItems > 0 ? "text-yellow-500" : "text-muted-foreground"
+                )} />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Estoque Baixo</p>
+                <p className={cn(
+                  "text-2xl font-bold",
+                  lowStockItems > 0 && "text-yellow-500"
+                )}>{lowStockItems}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={cn(expiringItems > 0 && "border-destructive/50")}>
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className={cn(
+                "flex items-center justify-center w-12 h-12 rounded-full",
+                expiringItems > 0 ? "bg-destructive/10" : "bg-muted"
+              )}>
+                <Clock className={cn(
+                  "w-6 h-6",
+                  expiringItems > 0 ? "text-destructive" : "text-muted-foreground"
+                )} />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Próx. Validade</p>
+                <p className={cn(
+                  "text-2xl font-bold",
+                  expiringItems > 0 && "text-destructive"
+                )}>{expiringItems}</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Empty state */}
