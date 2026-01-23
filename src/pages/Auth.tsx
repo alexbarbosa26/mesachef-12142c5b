@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Package, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import logo from '@/assets/logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -72,13 +73,11 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md animate-scale-in">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
-            <Package className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <img src={logo} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
           <div>
-            <CardTitle className="text-2xl font-bold">Controle de Estoque</CardTitle>
+            <CardTitle className="text-2xl font-bold">MesaChef</CardTitle>
             <CardDescription className="mt-2">
-              Sistema de gestão de estoque para restaurantes
+              Estoque & Gestão Inteligente
             </CardDescription>
           </div>
         </CardHeader>
