@@ -124,16 +124,6 @@ const Auth = () => {
               )}
             </Button>
           </form>
-          
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground text-center">
-              <strong>Usuários de teste:</strong>
-            </p>
-            <div className="mt-2 text-xs text-muted-foreground space-y-1">
-              <p>Admin: admin@gmail.com / admin</p>
-              <p>Staff: staff@gmail.com / staff</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
