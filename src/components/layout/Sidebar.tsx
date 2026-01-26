@@ -107,15 +107,20 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </Button>
+      {/* Mobile header bar - fixed at top, contains menu button */}
+      <header className="fixed top-0 left-0 right-0 h-14 bg-background border-b border-border z-40 lg:hidden flex items-center px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMobileOpen(true)}
+        >
+          <Menu className="w-6 h-6" />
+        </Button>
+        <div className="flex items-center gap-2 ml-3">
+          <img src={logo} alt="MesaChef Logo" className="w-8 h-8 object-contain rounded-full" />
+          <span className="font-semibold text-foreground">MesaChef</span>
+        </div>
+      </header>
 
       {/* Mobile overlay */}
       {isMobileOpen && (
@@ -128,11 +133,20 @@ const Sidebar = () => {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-full w-64 bg-sidebar flex flex-col z-40 transition-transform duration-300',
+          'fixed left-0 top-0 h-full w-64 bg-sidebar flex flex-col z-50 transition-transform duration-300',
           'lg:translate-x-0',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
+        {/* Close button inside sidebar - positioned to not overlap logo */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 lg:hidden text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          onClick={() => setIsMobileOpen(false)}
+        >
+          <X className="w-5 h-5" />
+        </Button>
         <NavContent />
       </aside>
     </>
