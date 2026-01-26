@@ -194,7 +194,8 @@ const StockEntry = () => {
   const isExpiringSoon = (expiryDate: string | null) => {
     if (!expiryDate) return false;
     const days = differenceInDays(parseISO(expiryDate), new Date());
-    return days <= settings.expiry_alert_days && days >= 0;
+    // Include expired items (days < 0) and items expiring soon
+    return days <= settings.expiry_alert_days;
   };
 
   const isLowStock = (itemId: string) => {
