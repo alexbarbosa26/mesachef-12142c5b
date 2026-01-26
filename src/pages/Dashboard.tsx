@@ -41,8 +41,9 @@ import {
   Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ExpiryBadge, getExpiryStatus } from '@/components/ExpiryBadge';
 
 const UNITS = ['kg', 'g', 'L', 'ml', 'unidades', 'caixas', 'pacotes'];
 
@@ -141,9 +142,8 @@ const Dashboard = () => {
   };
 
   const isExpiringSoon = (expiryDate: string | null) => {
-    if (!expiryDate) return false;
-    const days = differenceInDays(parseISO(expiryDate), new Date());
-    return days <= settings.expiry_alert_days && days >= 0;
+    const { status } = getExpiryStatus(expiryDate, settings.expiry_alert_days);
+    return status === 'expired' || status === 'expiring';
   };
 
   const isLowStock = (current: number, minimum: number) => {
@@ -575,13 +575,22 @@ const Dashboard = () => {
                                   : '-'}
                               </TableCell>
                               <TableCell>
-                                {item.expiry_date
-                                  ? format(
-                                      parseISO(item.expiry_date),
-                                      'dd/MM/yyyy',
-                                      { locale: ptBR }
-                                    )
-                                  : '-'}
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {item.expiry_date
+                                      ? format(
+                                          parseISO(item.expiry_date),
+                                          'dd/MM/yyyy',
+                                          { locale: ptBR }
+                                        )
+                                      : '-'}
+                                  </span>
+                                  <ExpiryBadge
+                                    expiryDate={item.expiry_date}
+                                    alertDays={settings.expiry_alert_days}
+                                    showIcon={true}
+                                  />
+                                </div>
                               </TableCell>
                               {isAdmin && (
                                 <TableCell>
