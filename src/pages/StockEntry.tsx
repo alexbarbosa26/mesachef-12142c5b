@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { ExpiryBadge, getExpiryStatus } from '@/components/ExpiryBadge';
 
 interface EditedItem {
   id: string;
@@ -192,10 +193,8 @@ const StockEntry = () => {
   };
 
   const isExpiringSoon = (expiryDate: string | null) => {
-    if (!expiryDate) return false;
-    const days = differenceInDays(parseISO(expiryDate), new Date());
-    // Include expired items (days < 0) and items expiring soon
-    return days <= settings.expiry_alert_days;
+    const { status } = getExpiryStatus(expiryDate, settings.expiry_alert_days);
+    return status === 'expired' || status === 'expiring';
   };
 
   const isLowStock = (itemId: string) => {
@@ -398,17 +397,24 @@ const StockEntry = () => {
                               {format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}
                             </TableCell>
                             <TableCell className="editable-cell">
-                              <Input
-                                type="date"
-                                value={getDisplayValue(item.id, 'expiry')}
-                                onChange={(e) =>
-                                  handleExpiryChange(item.id, e.target.value)
-                                }
-                                onKeyDown={(e) =>
-                                  handleKeyDown(e, item.id, 'expiry')
-                                }
-                                className="h-8 w-36"
-                              />
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="date"
+                                  value={getDisplayValue(item.id, 'expiry')}
+                                  onChange={(e) =>
+                                    handleExpiryChange(item.id, e.target.value)
+                                  }
+                                  onKeyDown={(e) =>
+                                    handleKeyDown(e, item.id, 'expiry')
+                                  }
+                                  className="h-8 w-36"
+                                />
+                                <ExpiryBadge
+                                  expiryDate={getDisplayValue(item.id, 'expiry') || null}
+                                  alertDays={settings.expiry_alert_days}
+                                  showIcon={true}
+                                />
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
