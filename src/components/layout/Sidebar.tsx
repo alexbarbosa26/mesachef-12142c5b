@@ -8,15 +8,30 @@ import {
   LogOut,
   Menu,
   X,
+  Bell,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useStockData } from '@/hooks/useStockData';
+import { useSettings } from '@/hooks/useSettings';
+import { getExpiryStatus } from '@/components/ExpiryBadge';
 
 const Sidebar = () => {
   const { user, userRole, signOut, isAdmin } = useAuth();
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { stockItems } = useStockData();
+  const { settings } = useSettings();
+
+  // Calculate alerts count
+  const alertsCount = stockItems.filter((item) => {
+    const isLowStock = item.current_quantity <= item.minimum_stock;
+    const expiryStatus = getExpiryStatus(item.expiry_date, settings.expiry_alert_days);
+    const hasExpiryAlert = expiryStatus.status === 'expired' || expiryStatus.status === 'expiring';
+    return isLowStock || hasExpiryAlert;
+  }).length;
 
   const navItems = [
     {
@@ -108,41 +123,66 @@ const Sidebar = () => {
   return (
     <>
       {/* Mobile header bar - fixed at top, contains menu button */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-background border-b border-border z-40 lg:hidden flex items-center px-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsMobileOpen(true)}
-        >
-          <Menu className="w-6 h-6" />
-        </Button>
-        <div className="flex items-center gap-2 ml-3">
-          <img src={logo} alt="MesaChef Logo" className="w-8 h-8 object-contain rounded-full" />
-          <span className="font-semibold text-foreground">MesaChef</span>
+      <header className="fixed top-0 left-0 right-0 h-14 bg-background border-b border-border z-40 lg:hidden flex items-center justify-between px-4">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileOpen(true)}
+            className="transition-transform duration-200 hover:scale-105 active:scale-95"
+          >
+            <Menu className="w-6 h-6" />
+          </Button>
+          <div className="flex items-center gap-2 ml-3">
+            <img src={logo} alt="MesaChef Logo" className="w-8 h-8 object-contain rounded-full" />
+            <span className="font-semibold text-foreground">MesaChef</span>
+          </div>
         </div>
+        
+        {/* Alert badge */}
+        {alertsCount > 0 && (
+          <Link to="/dashboard" className="relative">
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="w-5 h-5" />
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs p-0 animate-pulse"
+              >
+                {alertsCount > 99 ? '99+' : alertsCount}
+              </Badge>
+            </Button>
+          </Link>
+        )}
       </header>
 
-      {/* Mobile overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
+      {/* Mobile overlay with fade animation */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300",
+          isMobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setIsMobileOpen(false)}
+      />
 
-      {/* Sidebar */}
+      {/* Sidebar with smooth slide animation */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-full w-64 bg-sidebar flex flex-col z-50 transition-transform duration-300',
-          'lg:translate-x-0',
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed left-0 top-0 h-full w-64 bg-sidebar flex flex-col z-50',
+          'transition-all duration-300 ease-out',
+          'lg:translate-x-0 lg:shadow-none',
+          isMobileOpen 
+            ? 'translate-x-0 shadow-2xl' 
+            : '-translate-x-full'
         )}
       >
-        {/* Close button inside sidebar - positioned to not overlap logo */}
+        {/* Close button inside sidebar with rotation animation */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 lg:hidden text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className={cn(
+            "absolute top-4 right-4 lg:hidden text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+            "transition-all duration-200 hover:rotate-90"
+          )}
           onClick={() => setIsMobileOpen(false)}
         >
           <X className="w-5 h-5" />
