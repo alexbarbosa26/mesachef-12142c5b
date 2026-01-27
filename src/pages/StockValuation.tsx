@@ -11,7 +11,6 @@ import {
   Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
 import { getExpiryStatus } from '@/components/ExpiryBadge';
 import {
   Table,
@@ -21,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const StockValuation = () => {
   const { categories, stockItems, loading } = useStockData();
@@ -103,9 +103,7 @@ const StockValuation = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PageLoader message="Carregando valoração..." />
       </DashboardLayout>
     );
   }

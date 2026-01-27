@@ -62,12 +62,37 @@ export type Database = {
         }
         Relationships: []
       }
+      password_history: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string
           full_name: string
           id: string
+          is_active: boolean
+          last_password_change: string | null
+          password_expires_at: string | null
+          password_expiry_days: number | null
           updated_at: string
           user_id: string
         }
@@ -76,6 +101,10 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          is_active?: boolean
+          last_password_change?: string | null
+          password_expires_at?: string | null
+          password_expiry_days?: number | null
           updated_at?: string
           user_id: string
         }
@@ -84,6 +113,10 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_active?: boolean
+          last_password_change?: string | null
+          password_expires_at?: string | null
+          password_expiry_days?: number | null
           updated_at?: string
           user_id?: string
         }
