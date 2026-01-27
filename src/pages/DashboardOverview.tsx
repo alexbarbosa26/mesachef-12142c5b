@@ -217,7 +217,7 @@ const DashboardOverview = () => {
 
         {/* Tabs with detailed views */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="out-of-stock">
               Sem Estoque
