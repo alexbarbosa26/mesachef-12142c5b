@@ -101,15 +101,36 @@ serve(async (req) => {
       }
     }
 
-    // Update role if provided
+    // Update role if provided (use upsert in case user doesn't have a role yet)
     if (role !== undefined) {
-      const { error: roleUpdateError } = await adminClient
+      // First check if user has a role
+      const { data: existingRole } = await adminClient
         .from("user_roles")
-        .update({ role })
-        .eq("user_id", user_id);
+        .select("id")
+        .eq("user_id", user_id)
+        .maybeSingle();
 
-      if (roleUpdateError) {
-        throw roleUpdateError;
+      if (existingRole) {
+        // Update existing role
+        const { error: roleUpdateError } = await adminClient
+          .from("user_roles")
+          .update({ role })
+          .eq("user_id", user_id);
+
+        if (roleUpdateError) {
+          console.error("Error updating role:", roleUpdateError);
+          throw roleUpdateError;
+        }
+      } else {
+        // Insert new role
+        const { error: roleInsertError } = await adminClient
+          .from("user_roles")
+          .insert({ user_id, role });
+
+        if (roleInsertError) {
+          console.error("Error inserting role:", roleInsertError);
+          throw roleInsertError;
+        }
       }
     }
 
