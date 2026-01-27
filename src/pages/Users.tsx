@@ -30,9 +30,11 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Loader2, Users as UsersIcon, Shield, User } from 'lucide-react';
+import { UserPlus, Loader2, Users as UsersIcon, Shield, User, Edit, UserX, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { PageLoader } from '@/components/ui/page-loader';
+import UserEditDialog from '@/components/users/UserEditDialog';
 
 interface UserProfile {
   id: string;
@@ -40,6 +42,8 @@ interface UserProfile {
   full_name: string;
   email: string;
   role: 'admin' | 'staff';
+  is_active: boolean;
+  password_expiry_days: number | null;
   created_at: string;
 }
 
@@ -60,6 +64,8 @@ const Users = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: '',
@@ -78,7 +84,7 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      // Fetch profiles
+      // Fetch profiles with new fields
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -102,6 +108,8 @@ const Users = () => {
           full_name: profile.full_name,
           email: profile.email,
           role: (userRole?.role as 'admin' | 'staff') || 'staff',
+          is_active: profile.is_active ?? true,
+          password_expiry_days: profile.password_expiry_days,
           created_at: profile.created_at,
         };
       });
@@ -121,7 +129,7 @@ const Users = () => {
 
   const handleCreateUser = async () => {
     setErrors({});
-    
+
     const validation = signupSchema.safeParse(newUser);
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
@@ -137,42 +145,28 @@ const Users = () => {
     setIsCreating(true);
 
     try {
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: newUser.full_name,
-          },
+      // Use edge function to create user without affecting current session
+      const response = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUser.email,
+          password: newUser.password,
+          full_name: newUser.full_name,
+          role: newUser.role,
         },
       });
 
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          toast({
-            title: 'Erro',
-            description: 'Este email já está cadastrado',
-            variant: 'destructive',
-          });
-        } else {
-          throw authError;
-        }
-        setIsCreating(false);
-        return;
+      if (response.error) {
+        throw new Error(response.error.message);
       }
 
-      if (authData.user) {
-        // Add role
-        const { error: roleError } = await supabase.from('user_roles').insert({
-          user_id: authData.user.id,
-          role: newUser.role,
+      if (response.data?.error) {
+        toast({
+          title: 'Erro',
+          description: response.data.error,
+          variant: 'destructive',
         });
-
-        if (roleError) {
-          console.error('Error adding role:', roleError);
-        }
+        setIsCreating(false);
+        return;
       }
 
       toast({
@@ -187,16 +181,17 @@ const Users = () => {
         role: 'staff',
       });
       setDialogOpen(false);
-      
-      // Wait a bit for the trigger to create the profile
+
+      // Refresh users list
       setTimeout(() => {
         fetchUsers();
-      }, 1000);
-    } catch (error: any) {
+      }, 500);
+    } catch (error: unknown) {
       console.error('Error creating user:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao criar usuário';
       toast({
         title: 'Erro',
-        description: error.message || 'Erro ao criar usuário',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -204,15 +199,21 @@ const Users = () => {
     }
   };
 
+  const handleEditUser = (userProfile: UserProfile) => {
+    setEditingUser(userProfile);
+    setEditDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PageLoader message="Carregando usuários..." />
       </DashboardLayout>
     );
   }
+
+  const activeUsers = users.filter((u) => u.is_active);
+  const inactiveUsers = users.filter((u) => !u.is_active);
 
   return (
     <DashboardLayout>
@@ -338,7 +339,7 @@ const Users = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -356,13 +357,11 @@ const Users = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-success/10 rounded-lg">
-                  <Shield className="w-6 h-6 text-success" />
+                  <UserCheck className="w-6 h-6 text-success" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">
-                    {users.filter((u) => u.role === 'admin').length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Administradores</p>
+                  <p className="text-2xl font-bold">{activeUsers.length}</p>
+                  <p className="text-sm text-muted-foreground">Ativos</p>
                 </div>
               </div>
             </CardContent>
@@ -370,14 +369,27 @@ const Users = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-accent rounded-lg">
-                  <User className="w-6 h-6 text-accent-foreground" />
+                <div className="p-3 bg-destructive/10 rounded-lg">
+                  <UserX className="w-6 h-6 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{inactiveUsers.length}</p>
+                  <p className="text-sm text-muted-foreground">Inativos</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-warning/10 rounded-lg">
+                  <Shield className="w-6 h-6 text-warning" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {users.filter((u) => u.role === 'staff').length}
+                    {users.filter((u) => u.role === 'admin').length}
                   </p>
-                  <p className="text-sm text-muted-foreground">Funcionários</p>
+                  <p className="text-sm text-muted-foreground">Administradores</p>
                 </div>
               </div>
             </CardContent>
@@ -397,14 +409,16 @@ const Users = () => {
                     <TableHead className="font-semibold">Nome</TableHead>
                     <TableHead className="font-semibold">Email</TableHead>
                     <TableHead className="font-semibold">Tipo</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Cadastrado em</TableHead>
+                    <TableHead className="font-semibold text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((userItem, index) => (
                     <TableRow
                       key={userItem.id}
-                      className={index % 2 === 1 ? 'bg-table-row-alt' : ''}
+                      className={`${index % 2 === 1 ? 'bg-table-row-alt' : ''} ${!userItem.is_active ? 'opacity-60' : ''}`}
                     >
                       <TableCell className="font-medium">
                         {userItem.full_name}
@@ -422,14 +436,43 @@ const Users = () => {
                           }
                         >
                           {userItem.role === 'admin' ? (
-                            <><Shield className="w-3 h-3 mr-1" /> Admin</>
+                            <>
+                              <Shield className="w-3 h-3 mr-1" /> Admin
+                            </>
                           ) : (
-                            <><User className="w-3 h-3 mr-1" /> Staff</>
+                            <>
+                              <User className="w-3 h-3 mr-1" /> Staff
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={userItem.is_active ? 'default' : 'destructive'}
+                          className={userItem.is_active ? 'bg-success hover:bg-success/80' : ''}
+                        >
+                          {userItem.is_active ? (
+                            <>
+                              <UserCheck className="w-3 h-3 mr-1" /> Ativo
+                            </>
+                          ) : (
+                            <>
+                              <UserX className="w-3 h-3 mr-1" /> Inativo
+                            </>
                           )}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(userItem.created_at).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditUser(userItem)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -438,6 +481,15 @@ const Users = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit User Dialog */}
+        <UserEditDialog
+          user={editingUser}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onSuccess={fetchUsers}
+          currentUserId={user?.id}
+        />
       </div>
     </DashboardLayout>
   );
