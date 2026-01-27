@@ -5,12 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 export interface Settings {
   expiry_alert_days: number;
   low_stock_alert: boolean;
+  low_stock_percentage: number;
 }
 
 export const useSettings = () => {
   const [settings, setSettings] = useState<Settings>({
     expiry_alert_days: 1,
     low_stock_alert: true,
+    low_stock_percentage: 20,
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -31,6 +33,7 @@ export const useSettings = () => {
     setSettings({
       expiry_alert_days: parseInt(settingsMap.expiry_alert_days || '1', 10),
       low_stock_alert: settingsMap.low_stock_alert === 'true',
+      low_stock_percentage: parseInt(settingsMap.low_stock_percentage || '20', 10),
     });
     setLoading(false);
   };

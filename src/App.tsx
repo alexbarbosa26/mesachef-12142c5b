@@ -7,7 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import DashboardOverview from "./pages/DashboardOverview";
 import StockEntry from "./pages/StockEntry";
+import StockValuation from "./pages/StockValuation";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
@@ -23,8 +25,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<DashboardOverview />} />
+            <Route path="/stock-management" element={<Dashboard />} />
             <Route path="/stock-entry" element={<StockEntry />} />
+            <Route path="/stock-valuation" element={<StockValuation />} />
             <Route path="/users" element={<Users />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

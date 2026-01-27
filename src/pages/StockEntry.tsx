@@ -33,6 +33,7 @@ import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { ExpiryBadge, getExpiryStatus } from '@/components/ExpiryBadge';
+import { StockStatusBadge } from '@/components/StockStatusBadge';
 
 interface EditedItem {
   id: string;
@@ -330,6 +331,9 @@ const StockEntry = () => {
                         <TableHead className="font-semibold min-w-[200px]">
                           Produto
                         </TableHead>
+                        <TableHead className="font-semibold w-28">
+                          Status
+                        </TableHead>
                         <TableHead className="font-semibold w-24">
                           Unidade
                         </TableHead>
@@ -366,6 +370,11 @@ const StockEntry = () => {
                           >
                             <TableCell className="font-medium">
                               {item.name}
+                            </TableCell>
+                            <TableCell>
+                              <StockStatusBadge
+                                currentQuantity={parseFloat(getDisplayValue(item.id, 'quantity')) || 0}
+                              />
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {item.unit}
