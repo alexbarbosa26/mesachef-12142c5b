@@ -9,6 +9,8 @@ import {
   Menu,
   X,
   Bell,
+  LayoutDashboard,
+  DollarSign,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -27,24 +29,45 @@ const Sidebar = () => {
 
   // Calculate alerts count
   const alertsCount = stockItems.filter((item) => {
-    const isLowStock = item.current_quantity <= item.minimum_stock;
+    // Out of stock
+    if (item.current_quantity === 0) return true;
+    
+    // Low stock (using percentage threshold)
+    const lowStockThreshold = settings.low_stock_percentage || 20;
+    const threshold = item.minimum_stock * (1 + lowStockThreshold / 100);
+    const isLowStock = item.current_quantity > 0 && item.current_quantity <= threshold;
+    
+    // Expiry alert
     const expiryStatus = getExpiryStatus(item.expiry_date, settings.expiry_alert_days);
     const hasExpiryAlert = expiryStatus.status === 'expired' || expiryStatus.status === 'expiring';
+    
     return isLowStock || hasExpiryAlert;
   }).length;
 
   const navItems = [
     {
-      name: 'Gestão de Estoque',
+      name: 'Dashboard',
       href: '/dashboard',
-      icon: ClipboardList,
+      icon: LayoutDashboard,
       adminOnly: false,
+    },
+    {
+      name: 'Gestão de Estoque',
+      href: '/stock-management',
+      icon: ClipboardList,
+      adminOnly: true,
     },
     {
       name: 'Preenchimento',
       href: '/stock-entry',
       icon: Edit3,
       adminOnly: false,
+    },
+    {
+      name: 'Valoração',
+      href: '/stock-valuation',
+      icon: DollarSign,
+      adminOnly: true,
     },
     {
       name: 'Usuários',

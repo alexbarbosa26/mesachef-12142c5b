@@ -90,6 +90,9 @@ const Dashboard = () => {
   const [expiryAlertDays, setExpiryAlertDays] = useState(
     settings.expiry_alert_days.toString()
   );
+  const [lowStockPercentage, setLowStockPercentage] = useState(
+    settings.low_stock_percentage?.toString() || '20'
+  );
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -136,8 +139,9 @@ const Dashboard = () => {
     setEditingItem(null);
   };
 
-  const handleUpdateExpiryAlert = async () => {
+  const handleUpdateSettings = async () => {
     await updateSetting('expiry_alert_days', expiryAlertDays);
+    await updateSetting('low_stock_percentage', lowStockPercentage);
     setSettingsDialogOpen(false);
   };
 
@@ -339,10 +343,22 @@ const Dashboard = () => {
                       />
                       <p className="text-sm text-muted-foreground">
                         Itens com validade dentro deste período serão destacados
-                        em vermelho
                       </p>
                     </div>
-                    <Button onClick={handleUpdateExpiryAlert} className="w-full">
+                    <div className="space-y-2">
+                      <Label>Percentual para alerta de estoque baixo (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={lowStockPercentage}
+                        onChange={(e) => setLowStockPercentage(e.target.value)}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Itens com quantidade até este percentual acima do mínimo serão alertados (padrão: 20%)
+                      </p>
+                    </div>
+                    <Button onClick={handleUpdateSettings} className="w-full">
                       Salvar
                     </Button>
                   </div>
