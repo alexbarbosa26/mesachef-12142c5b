@@ -66,6 +66,8 @@ const Dashboard = () => {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [editingCategoryDialogOpen, setEditingCategoryDialogOpen] = useState(false);
+  const [editingItemDialogOpen, setEditingItemDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<{
     id: string;
     name: string;
@@ -105,6 +107,7 @@ const Dashboard = () => {
     if (!editingCategory || !editingCategory.name.trim()) return;
     await updateCategory(editingCategory.id, editingCategory.name.trim());
     setEditingCategory(null);
+    setEditingCategoryDialogOpen(false);
   };
 
   const handleAddItem = async () => {
@@ -137,6 +140,7 @@ const Dashboard = () => {
       category_id: editingItem.category_id,
     });
     setEditingItem(null);
+    setEditingItemDialogOpen(false);
   };
 
   const handleUpdateSettings = async () => {
@@ -458,18 +462,19 @@ const Dashboard = () => {
                 </CardTitle>
                 {isAdmin && (
                   <div className="flex gap-2">
-                    <Dialog>
+                    <Dialog open={editingCategoryDialogOpen && editingCategory?.id === category.id} onOpenChange={setEditingCategoryDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
-                          onClick={() =>
+                          onClick={() => {
                             setEditingCategory({
                               id: category.id,
                               name: category.name,
-                            })
-                          }
+                            });
+                            setEditingCategoryDialogOpen(true);
+                          }}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -611,13 +616,13 @@ const Dashboard = () => {
                               {isAdmin && (
                                 <TableCell>
                                   <div className="flex gap-1">
-                                    <Dialog>
+                                    <Dialog open={editingItemDialogOpen && editingItem?.id === item.id} onOpenChange={setEditingItemDialogOpen}>
                                       <DialogTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="icon"
                                           className="h-8 w-8"
-                                          onClick={() =>
+                                          onClick={() => {
                                             setEditingItem({
                                               id: item.id,
                                               name: item.name,
@@ -626,8 +631,9 @@ const Dashboard = () => {
                                               minimum_stock:
                                                 item.minimum_stock.toString(),
                                               category_id: item.category_id,
-                                            })
-                                          }
+                                            });
+                                            setEditingItemDialogOpen(true);
+                                          }}
                                         >
                                           <Edit className="w-4 h-4" />
                                         </Button>
