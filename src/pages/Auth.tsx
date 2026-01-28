@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
+import { supabase } from '@/integrations/supabase/client';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -23,6 +24,28 @@ const Auth = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const checkUserStatus = async (userId: string): Promise<{ isActive: boolean; passwordExpired: boolean }> => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_active, password_expires_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!profile) {
+      return { isActive: true, passwordExpired: false };
+    }
+
+    const isActive = profile.is_active !== false;
+    let passwordExpired = false;
+
+    if (profile.password_expires_at) {
+      const expiresAt = new Date(profile.password_expires_at);
+      passwordExpired = expiresAt < new Date();
+    }
+
+    return { isActive, passwordExpired };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +81,32 @@ const Auth = () => {
       });
       setIsLoading(false);
       return;
+    }
+
+    // Check user status after successful auth
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { isActive, passwordExpired } = await checkUserStatus(user.id);
+
+      if (!isActive) {
+        await supabase.auth.signOut();
+        toast({
+          title: 'Acesso Negado',
+          description: 'Sua conta está desativada. Entre em contato com o administrador.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (passwordExpired) {
+        toast({
+          title: 'Senha Expirada',
+          description: 'Sua senha expirou. Por favor, altere sua senha para continuar.',
+          variant: 'destructive',
+        });
+        // Allow login but show warning - they will see the alert on dashboard
+      }
     }
 
     toast({
