@@ -4,12 +4,14 @@ import { useStockData } from '@/hooks/useStockData';
 import { useSettings } from '@/hooks/useSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Package,
   AlertCircle,
   Clock,
   PackageX,
   TrendingDown,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getExpiryStatus, ExpiryBadge } from '@/components/ExpiryBadge';
@@ -23,6 +25,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PageLoader } from '@/components/ui/page-loader';
+import PasswordExpiryAlert from '@/components/PasswordExpiryAlert';
+import { exportToCSV, formatDateForExport } from '@/utils/exportUtils';
+import { format } from 'date-fns';
 
 const DashboardOverview = () => {
   const { categories, stockItems, loading } = useStockData();
@@ -94,15 +99,51 @@ const DashboardOverview = () => {
     );
   }
 
+  const handleExportStock = () => {
+    const exportData = stockItems.map((item) => {
+      const category = categories.find((c) => c.id === item.category_id);
+      return {
+        name: item.name,
+        category: category?.name || 'Sem Categoria',
+        current_quantity: item.current_quantity,
+        unit: item.unit,
+        minimum_stock: item.minimum_stock,
+        value: item.value || 0,
+        expiry_date: formatDateForExport(item.expiry_date),
+        count_date: formatDateForExport(item.count_date),
+      };
+    });
+
+    exportToCSV(exportData, `estoque_${format(new Date(), 'yyyy-MM-dd')}`, [
+      { key: 'name', label: 'Produto' },
+      { key: 'category', label: 'Categoria' },
+      { key: 'current_quantity', label: 'Qtd. Atual' },
+      { key: 'unit', label: 'Unidade' },
+      { key: 'minimum_stock', label: 'Est. Mínimo' },
+      { key: 'value', label: 'Valor (R$)' },
+      { key: 'expiry_date', label: 'Validade' },
+      { key: 'count_date', label: 'Data Contagem' },
+    ]);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
+        {/* Password Expiry Alert */}
+        <PasswordExpiryAlert />
+
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do estoque
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Visão geral do estoque
+            </p>
+          </div>
+          <Button onClick={handleExportStock} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar Estoque
+          </Button>
         </div>
 
         {/* Summary Cards */}

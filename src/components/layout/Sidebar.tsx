@@ -11,6 +11,7 @@ import {
   Bell,
   LayoutDashboard,
   DollarSign,
+  FileText,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,12 @@ const Sidebar = () => {
       name: 'Usuários',
       href: '/users',
       icon: Users,
+      adminOnly: true,
+    },
+    {
+      name: 'Log de Auditoria',
+      href: '/audit-log',
+      icon: FileText,
       adminOnly: true,
     },
   ];
