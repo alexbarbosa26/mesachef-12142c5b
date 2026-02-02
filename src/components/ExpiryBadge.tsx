@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -39,46 +40,46 @@ export const getExpiryLabel = (status: ExpiryStatus, days: number | null): strin
   return `${days} dias`;
 };
 
-export const ExpiryBadge = ({
-  expiryDate,
-  alertDays,
-  showIcon = true,
-  className,
-}: ExpiryBadgeProps) => {
-  const { status, days } = getExpiryStatus(expiryDate, alertDays);
+export const ExpiryBadge = forwardRef<HTMLDivElement, ExpiryBadgeProps>(
+  ({ expiryDate, alertDays, showIcon = true, className }, ref) => {
+    const { status, days } = getExpiryStatus(expiryDate, alertDays);
 
-  if (status === 'none') {
-    return null;
+    if (status === 'none') {
+      return null;
+    }
+
+    if (status === 'ok') {
+      return null; // Don't show badge for items with plenty of time
+    }
+
+    const isExpired = status === 'expired';
+    const label = getExpiryLabel(status, days);
+
+    return (
+      <Badge
+        ref={ref}
+        variant="outline"
+        className={cn(
+          'gap-1 font-medium whitespace-nowrap',
+          isExpired
+            ? 'border-destructive bg-destructive/10 text-destructive'
+            : 'border-[hsl(var(--warning))] bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning-foreground))]',
+          className
+        )}
+      >
+        {showIcon && (
+          isExpired ? (
+            <AlertTriangle className="w-3 h-3" />
+          ) : (
+            <Clock className="w-3 h-3" />
+          )
+        )}
+        {label}
+      </Badge>
+    );
   }
+);
 
-  if (status === 'ok') {
-    return null; // Don't show badge for items with plenty of time
-  }
-
-  const isExpired = status === 'expired';
-  const label = getExpiryLabel(status, days);
-
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        'gap-1 font-medium whitespace-nowrap',
-        isExpired
-          ? 'border-destructive bg-destructive/10 text-destructive'
-          : 'border-[hsl(var(--warning))] bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning-foreground))]',
-        className
-      )}
-    >
-      {showIcon && (
-        isExpired ? (
-          <AlertTriangle className="w-3 h-3" />
-        ) : (
-          <Clock className="w-3 h-3" />
-        )
-      )}
-      {label}
-    </Badge>
-  );
-};
+ExpiryBadge.displayName = 'ExpiryBadge';
 
 export default ExpiryBadge;
