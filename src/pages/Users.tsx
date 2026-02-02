@@ -30,11 +30,12 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Loader2, Users as UsersIcon, Shield, User, Edit, UserX, UserCheck } from 'lucide-react';
+import { UserPlus, Loader2, Users as UsersIcon, Shield, User, Edit, UserX, UserCheck, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { PageLoader } from '@/components/ui/page-loader';
 import UserEditDialog from '@/components/users/UserEditDialog';
+import PasswordResetDialog from '@/components/users/PasswordResetDialog';
 
 interface UserProfile {
   id: string;
@@ -66,6 +67,8 @@ const Users = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [passwordResetUser, setPasswordResetUser] = useState<UserProfile | null>(null);
+  const [passwordResetDialogOpen, setPasswordResetDialogOpen] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: '',
@@ -202,6 +205,11 @@ const Users = () => {
   const handleEditUser = (userProfile: UserProfile) => {
     setEditingUser(userProfile);
     setEditDialogOpen(true);
+  };
+
+  const handleResetPassword = (userProfile: UserProfile) => {
+    setPasswordResetUser(userProfile);
+    setPasswordResetDialogOpen(true);
   };
 
   if (loading) {
@@ -466,13 +474,24 @@ const Users = () => {
                         {new Date(userItem.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditUser(userItem)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleResetPassword(userItem)}
+                            title="Redefinir Senha"
+                          >
+                            <Key className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditUser(userItem)}
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -489,6 +508,14 @@ const Users = () => {
           onOpenChange={setEditDialogOpen}
           onSuccess={fetchUsers}
           currentUserId={user?.id}
+        />
+
+        {/* Password Reset Dialog */}
+        <PasswordResetDialog
+          user={passwordResetUser}
+          open={passwordResetDialogOpen}
+          onOpenChange={setPasswordResetDialogOpen}
+          onSuccess={fetchUsers}
         />
       </div>
     </DashboardLayout>

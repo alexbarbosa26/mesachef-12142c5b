@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 export interface Category {
   id: string;
@@ -30,6 +31,7 @@ export const useStockData = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { logAction } = useAuditLog();
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -96,6 +98,13 @@ export const useStockData = () => {
       return null;
     }
 
+    await logAction({
+      action: 'CREATE',
+      entity_type: 'category',
+      entity_id: data.id,
+      details: { name },
+    });
+
     await fetchCategories();
     toast({ title: 'Sucesso', description: 'Categoria adicionada!' });
     return data;
@@ -116,12 +125,20 @@ export const useStockData = () => {
       return false;
     }
 
+    await logAction({
+      action: 'UPDATE',
+      entity_type: 'category',
+      entity_id: id,
+      details: { name },
+    });
+
     await fetchCategories();
     toast({ title: 'Sucesso', description: 'Categoria atualizada!' });
     return true;
   };
 
   const deleteCategory = async (id: string) => {
+    const category = categories.find((c) => c.id === id);
     const { error } = await supabase.from('categories').delete().eq('id', id);
 
     if (error) {
@@ -132,6 +149,13 @@ export const useStockData = () => {
       });
       return false;
     }
+
+    await logAction({
+      action: 'DELETE',
+      entity_type: 'category',
+      entity_id: id,
+      details: { name: category?.name },
+    });
 
     await fetchAll();
     toast({ title: 'Sucesso', description: 'Categoria excluída!' });
@@ -154,12 +178,20 @@ export const useStockData = () => {
       return null;
     }
 
+    await logAction({
+      action: 'CREATE',
+      entity_type: 'stock_item',
+      entity_id: data.id,
+      details: { name: item.name, category_id: item.category_id },
+    });
+
     await fetchStockItems();
     toast({ title: 'Sucesso', description: 'Item adicionado!' });
     return data;
   };
 
   const updateStockItem = async (id: string, updates: Partial<StockItem>) => {
+    const item = stockItems.find((i) => i.id === id);
     const { error } = await supabase
       .from('stock_items')
       .update(updates)
@@ -174,11 +206,19 @@ export const useStockData = () => {
       return false;
     }
 
+    await logAction({
+      action: 'UPDATE',
+      entity_type: 'stock_item',
+      entity_id: id,
+      details: { name: item?.name, updates },
+    });
+
     await fetchStockItems();
     return true;
   };
 
   const deleteStockItem = async (id: string) => {
+    const item = stockItems.find((i) => i.id === id);
     const { error } = await supabase.from('stock_items').delete().eq('id', id);
 
     if (error) {
@@ -189,6 +229,13 @@ export const useStockData = () => {
       });
       return false;
     }
+
+    await logAction({
+      action: 'DELETE',
+      entity_type: 'stock_item',
+      entity_id: id,
+      details: { name: item?.name },
+    });
 
     await fetchStockItems();
     toast({ title: 'Sucesso', description: 'Item excluído!' });
@@ -205,6 +252,19 @@ export const useStockData = () => {
       responsible_user: string;
     }>
   ) => {
+    // Capture previous values for audit logging
+    const previousValues = updates.map((update) => {
+      const item = stockItems.find((i) => i.id === update.id);
+      return {
+        id: update.id,
+        name: item?.name,
+        previous_quantity: item?.current_quantity,
+        new_quantity: update.current_quantity,
+        previous_expiry: item?.expiry_date,
+        new_expiry: update.expiry_date,
+      };
+    });
+
     const promises = updates.map((update) =>
       supabase
         .from('stock_items')
@@ -228,6 +288,21 @@ export const useStockData = () => {
       });
       return false;
     }
+
+    // Log bulk stock update
+    await logAction({
+      action: 'BULK_STOCK_UPDATE',
+      entity_type: 'stock_items',
+      details: {
+        items_updated: updates.length,
+        changes: previousValues.map((pv) => ({
+          item_id: pv.id,
+          item_name: pv.name,
+          quantity_change: `${pv.previous_quantity} → ${pv.new_quantity}`,
+          expiry_change: pv.previous_expiry !== pv.new_expiry ? `${pv.previous_expiry || 'N/A'} → ${pv.new_expiry || 'N/A'}` : undefined,
+        })),
+      },
+    });
 
     await fetchStockItems();
     return true;
