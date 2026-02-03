@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStockData } from '@/hooks/useStockData';
 import { useSettings } from '@/hooks/useSettings';
+import { PageLoader } from '@/components/ui/page-loader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,11 +35,11 @@ import {
   Trash2,
   Edit,
   Settings,
-  Loader2,
   AlertTriangle,
   Package,
   AlertCircle,
   Clock,
+  Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -95,6 +96,8 @@ const Dashboard = () => {
   const [lowStockPercentage, setLowStockPercentage] = useState(
     settings.low_stock_percentage?.toString() || '20'
   );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -158,24 +161,53 @@ const Dashboard = () => {
     return current <= minimum;
   };
 
+  // Filter items based on search and category
+  const filteredStockItems = useMemo(() => {
+    let items = stockItems;
+    
+    if (filterCategory !== 'all') {
+      items = items.filter((item) => item.category_id === filterCategory);
+    }
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      items = items.filter((item) => item.name.toLowerCase().includes(query));
+    }
+    
+    return items;
+  }, [stockItems, filterCategory, searchQuery]);
+
+  // Filter categories that have matching items
+  const filteredCategories = useMemo(() => {
+    if (filterCategory === 'all' && !searchQuery) {
+      return categories;
+    }
+    
+    const itemCategoryIds = new Set(filteredStockItems.map((item) => item.category_id));
+    return categories.filter((cat) => itemCategoryIds.has(cat.id));
+  }, [categories, filteredStockItems, filterCategory, searchQuery]);
+
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <PageLoader message="Carregando gestão de estoque..." />
       </DashboardLayout>
     );
   }
 
   // Calculate summary stats
-  const totalItems = stockItems.length;
-  const lowStockItems = stockItems.filter((item) =>
+  const totalItems = filteredStockItems.length;
+  const lowStockItems = filteredStockItems.filter((item) =>
     isLowStock(item.current_quantity, item.minimum_stock)
   ).length;
-  const expiringItems = stockItems.filter((item) =>
+  const expiringItems = filteredStockItems.filter((item) =>
     isExpiringSoon(item.expiry_date)
   ).length;
+
+  // Get items by category for filtered items
+  const getFilteredItemsByCategory = (categoryId: string) => {
+    return filteredStockItems.filter((item) => item.category_id === categoryId);
+  };
 
   return (
     <DashboardLayout>
@@ -385,22 +417,22 @@ const Dashboard = () => {
               </div>
             </CardContent>
           </Card>
-          <Card className={cn(lowStockItems > 0 && "border-yellow-500/50")}>
+          <Card className={cn(lowStockItems > 0 && "border-warning/50")}>
             <CardContent className="flex items-center gap-4 p-6">
               <div className={cn(
                 "flex items-center justify-center w-12 h-12 rounded-full",
-                lowStockItems > 0 ? "bg-yellow-500/10" : "bg-muted"
+                lowStockItems > 0 ? "bg-warning/10" : "bg-muted"
               )}>
                 <AlertCircle className={cn(
                   "w-6 h-6",
-                  lowStockItems > 0 ? "text-yellow-500" : "text-muted-foreground"
+                  lowStockItems > 0 ? "text-warning" : "text-muted-foreground"
                 )} />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Estoque Baixo</p>
                 <p className={cn(
                   "text-2xl font-bold",
-                  lowStockItems > 0 && "text-yellow-500"
+                  lowStockItems > 0 && "text-warning"
                 )}>{lowStockItems}</p>
               </div>
             </CardContent>
@@ -427,6 +459,33 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Todas as categorias" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar produtos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
         {/* Empty state */}
         {categories.length === 0 && (
           <Card className="border-dashed">
@@ -450,9 +509,24 @@ const Dashboard = () => {
           </Card>
         )}
 
+        {/* No results state */}
+        {filteredStockItems.length === 0 && categories.length > 0 && (
+          <Card className="border-dashed">
+            <CardContent className="py-12 text-center">
+              <Search className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Nenhum item encontrado
+              </h3>
+              <p className="text-muted-foreground">
+                Tente ajustar os filtros de busca.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Categories and items */}
-        {categories.map((category) => {
-          const items = getItemsByCategory(category.id);
+        {filteredCategories.map((category) => {
+          const items = getFilteredItemsByCategory(category.id);
 
           return (
             <Card key={category.id} className="overflow-hidden">
