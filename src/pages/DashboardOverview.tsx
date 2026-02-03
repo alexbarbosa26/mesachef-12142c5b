@@ -462,17 +462,21 @@ const DashboardOverview = () => {
                           <TableBody>
                             {items.map((item) => {
                               const variation = getVariation(item.id);
+                            
                               return (
                                 <TableRow key={item.id}>
                                   <TableCell className="font-medium">
                                     {item.name}
                                   </TableCell>
+                            
                                   <TableCell className="text-warning font-semibold">
                                     {item.current_quantity} {item.unit}
                                   </TableCell>
+                            
                                   <TableCell>
                                     {item.minimum_stock} {item.unit}
                                   </TableCell>
+                            
                                   <TableCell>
                                     {variation ? (
                                       <StockVariationBadge
@@ -483,13 +487,16 @@ const DashboardOverview = () => {
                                       <span className="text-muted-foreground text-sm">-</span>
                                     )}
                                   </TableCell>
+                            
                                   <TableCell>
                                     <Badge className="bg-warning text-warning-foreground">
                                       Baixo
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            ))};
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+
                           </TableBody>
                         </Table>
                       </div>
