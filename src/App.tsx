@@ -13,6 +13,7 @@ import StockEntry from "./pages/StockEntry";
 import StockValuation from "./pages/StockValuation";
 import Users from "./pages/Users";
 import AuditLog from "./pages/AuditLog";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/stock-valuation" element={<StockValuation />} />
             <Route path="/users" element={<Users />} />
             <Route path="/audit-log" element={<AuditLog />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   DollarSign,
   FileText,
+  Settings,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,12 @@ const Sidebar = () => {
       name: 'Log de Auditoria',
       href: '/audit-log',
       icon: FileText,
+      adminOnly: true,
+    },
+    {
+      name: 'Configurações',
+      href: '/settings',
+      icon: Settings,
       adminOnly: true,
     },
   ];

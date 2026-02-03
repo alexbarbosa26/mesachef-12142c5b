@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useStockData } from '@/hooks/useStockData';
 import { useSettings } from '@/hooks/useSettings';
+import { useStockHistory } from '@/hooks/useStockHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getExpiryStatus, ExpiryBadge } from '@/components/ExpiryBadge';
+import { StockVariationBadge } from '@/components/StockVariationBadge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -32,6 +34,7 @@ import { format } from 'date-fns';
 const DashboardOverview = () => {
   const { categories, stockItems, loading } = useStockData();
   const { settings } = useSettings();
+  const { getVariation } = useStockHistory();
 
   const stats = useMemo(() => {
     const totalItems = stockItems.length;
@@ -191,19 +194,19 @@ const DashboardOverview = () => {
             </CardContent>
           </Card>
 
-          <Card className={cn(stats.lowStock.length > 0 && 'border-yellow-500/50')}>
+          <Card className={cn(stats.lowStock.length > 0 && 'border-warning/50')}>
             <CardContent className="flex items-center gap-4 p-6">
               <div
                 className={cn(
                   'flex items-center justify-center w-12 h-12 rounded-full',
-                  stats.lowStock.length > 0 ? 'bg-yellow-500/10' : 'bg-muted'
+                  stats.lowStock.length > 0 ? 'bg-warning/10' : 'bg-muted'
                 )}
               >
                 <TrendingDown
                   className={cn(
                     'w-6 h-6',
                     stats.lowStock.length > 0
-                      ? 'text-yellow-500'
+                      ? 'text-warning'
                       : 'text-muted-foreground'
                   )}
                 />
@@ -213,7 +216,7 @@ const DashboardOverview = () => {
                 <p
                   className={cn(
                     'text-2xl font-bold',
-                    stats.lowStock.length > 0 && 'text-yellow-500'
+                    stats.lowStock.length > 0 && 'text-warning'
                   )}
                 >
                   {stats.lowStock.length}
@@ -269,7 +272,7 @@ const DashboardOverview = () => {
             <TabsTrigger value="low-stock">
               Estoque Baixo
               {stats.lowStock.length > 0 && (
-                <Badge className="ml-2 bg-yellow-500">
+                <Badge className="ml-2 bg-warning text-warning-foreground">
                   {stats.lowStock.length}
                 </Badge>
               )}
@@ -337,9 +340,9 @@ const DashboardOverview = () => {
                     {stats.lowStock.slice(0, 3).map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/10"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-warning/10"
                       >
-                        <AlertCircle className="w-5 h-5 text-yellow-500" />
+                        <AlertCircle className="w-5 h-5 text-warning" />
                         <div className="flex-1">
                           <p className="font-medium">{item.name}</p>
                           <p className="text-sm text-muted-foreground">
@@ -430,7 +433,7 @@ const DashboardOverview = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingDown className="w-5 h-5 text-yellow-500" />
+                  <TrendingDown className="w-5 h-5 text-warning" />
                   Itens com Estoque Baixo
                 </CardTitle>
               </CardHeader>
@@ -452,24 +455,37 @@ const DashboardOverview = () => {
                               <TableHead>Produto</TableHead>
                               <TableHead>Qtd. Atual</TableHead>
                               <TableHead>Est. Mínimo</TableHead>
+                              <TableHead>Variação</TableHead>
                               <TableHead>Status</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {items.map((item) => (
-                              <TableRow key={item.id}>
-                                <TableCell className="font-medium">
-                                  {item.name}
-                                </TableCell>
-                                <TableCell className="text-yellow-600 font-semibold">
-                                  {item.current_quantity} {item.unit}
-                                </TableCell>
-                                <TableCell>
-                                  {item.minimum_stock} {item.unit}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge className="bg-yellow-500">
-                                    Baixo
+                            {items.map((item) => {
+                              const variation = getVariation(item.id);
+                              return (
+                                <TableRow key={item.id}>
+                                  <TableCell className="font-medium">
+                                    {item.name}
+                                  </TableCell>
+                                  <TableCell className="text-warning font-semibold">
+                                    {item.current_quantity} {item.unit}
+                                  </TableCell>
+                                  <TableCell>
+                                    {item.minimum_stock} {item.unit}
+                                  </TableCell>
+                                  <TableCell>
+                                    {variation ? (
+                                      <StockVariationBadge
+                                        previousQuantity={variation.previous_quantity}
+                                        currentQuantity={variation.current_quantity}
+                                      />
+                                    ) : (
+                                      <span className="text-muted-foreground text-sm">-</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge className="bg-warning text-warning-foreground">
+                                      Baixo
                                   </Badge>
                                 </TableCell>
                               </TableRow>

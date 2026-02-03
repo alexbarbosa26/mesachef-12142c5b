@@ -142,27 +142,30 @@ const Auth = () => {
 
     setIsLoading(true);
 
-    const redirectUrl = `${window.location.origin}/auth?mode=reset`;
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
-
-    if (error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao enviar email de recuperação. Tente novamente.',
-        variant: 'destructive',
+    try {
+      // Use our custom edge function for password reset
+      const resetUrl = `${window.location.origin}/reset-password`;
+      
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email, resetUrl },
       });
-      setIsLoading(false);
-      return;
-    }
 
-    setEmailSent(true);
-    toast({
-      title: 'Email Enviado',
-      description: 'Verifique sua caixa de entrada para redefinir sua senha.',
-    });
+      if (error) throw error;
+
+      setEmailSent(true);
+      toast({
+        title: 'Email Enviado',
+        description: 'Se o email existir, você receberá um link para redefinir sua senha.',
+      });
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      // Still show success message for security (don't reveal if email exists)
+      setEmailSent(true);
+      toast({
+        title: 'Email Enviado',
+        description: 'Se o email existir, você receberá um link para redefinir sua senha.',
+      });
+    }
     
     setIsLoading(false);
   };
