@@ -489,7 +489,7 @@ const DashboardOverview = () => {
                                   </Badge>
                                 </TableCell>
                               </TableRow>
-                            ))}
+                            ))};
                           </TableBody>
                         </Table>
                       </div>
