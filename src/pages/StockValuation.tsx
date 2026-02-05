@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useStockData } from '@/hooks/useStockData';
 import { useSettings } from '@/hooks/useSettings';
+import { useStockValueTrend } from '@/hooks/useStockValueTrend';
+import ValueTrendChart from '@/components/valuation/ValueTrendChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   DollarSign,
@@ -25,6 +27,7 @@ import { PageLoader } from '@/components/ui/page-loader';
 const StockValuation = () => {
   const { categories, stockItems, loading } = useStockData();
   const { settings } = useSettings();
+  const { trendData, trendPercentage, loading: trendLoading } = useStockValueTrend(stockItems);
 
   const valuations = useMemo(() => {
     // Total value
@@ -139,7 +142,7 @@ const StockValuation = () => {
         </Card>
 
         {/* Status Value Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-3">
@@ -247,6 +250,13 @@ const StockValuation = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Trend Chart */}
+        <ValueTrendChart
+          data={trendData}
+          trendPercentage={trendPercentage}
+          loading={trendLoading}
+        />
 
         {/* Category Breakdown */}
         <Card>
