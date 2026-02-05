@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,24 +25,108 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
-  const [searchParams] = useSearchParams();
+  const [isSessionReady, setIsSessionReady] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if we have an access token in the URL (from the email link)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const type = hashParams.get('type');
-    
-    if (accessToken && type === 'recovery') {
-      // Set the session with the recovery token
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: hashParams.get('refresh_token') || '',
-      });
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth event:', event, 'Has session:', !!session);
+        
+        if (session) {
+          setUserId(session.user.id);
+          setIsSessionReady(true);
+          setSessionError(null);
+        }
+      }
+    );
+
+    const initSession = async () => {
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      
+      if (existingSession) {
+        console.log('Existing session found for user:', existingSession.user.id);
+        setUserId(existingSession.user.id);
+        setIsSessionReady(true);
+        return;
+      }
+
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+      
+      console.log('URL params - type:', type, 'hasAccessToken:', !!accessToken);
+      
+      if (accessToken && type === 'recovery') {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
+        
+        if (error) {
+          console.error('Error setting session:', error);
+          setSessionError('Link de recuperação inválido ou expirado.');
+        } else if (data.session) {
+          setUserId(data.session.user.id);
+          setIsSessionReady(true);
+        }
+      } else if (!accessToken) {
+        setTimeout(() => {
+          if (!isSessionReady) {
+            setSessionError('Link de recuperação inválido. Solicite um novo.');
+          }
+        }, 2000);
+      }
+    };
+
+    initSession();
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  if (sessionError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md animate-scale-in">
+          <CardHeader className="text-center space-y-4">
+            <img src={logo} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
+            <div>
+              <CardTitle className="text-2xl font-bold text-destructive">Link Inválido</CardTitle>
+              <CardDescription className="mt-2">{sessionError}</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => navigate('/auth')}>
+              Voltar para Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isSessionReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md animate-scale-in">
+          <CardHeader className="text-center space-y-4">
+            <img src={logo} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
+            <div>
+              <CardTitle className="text-2xl font-bold">Validando Link...</CardTitle>
+              <CardDescription className="mt-2">Aguarde enquanto validamos seu link</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,30 +146,45 @@ const ResetPassword = () => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.auth.updateUser({
-      password: password,
-    });
-
-    if (error) {
-      console.error('Error updating password:', error);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       toast({
         title: 'Erro',
-        description: error.message === 'New password should be different from the old password.'
-          ? 'A nova senha deve ser diferente da senha atual.'
-          : 'Erro ao atualizar senha. O link pode ter expirado.',
+        description: 'Sessão expirada. Solicite um novo link de recuperação.',
         variant: 'destructive',
       });
       setIsLoading(false);
       return;
     }
 
-    // Update last_password_change in profiles
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+    });
+
+    if (error) {
+      console.error('Error updating password:', error);
+      
+      let errorMessage = 'Erro ao atualizar senha. O link pode ter expirado.';
+      if (error.message === 'New password should be different from the old password.') {
+        errorMessage = 'A nova senha deve ser diferente da senha atual.';
+      } else if (error.message.includes('expired') || error.message.includes('invalid')) {
+        errorMessage = 'O link de recuperação expirou. Solicite um novo.';
+      }
+      
+      toast({
+        title: 'Erro',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (userId) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('password_expiry_days')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       const updates: Record<string, any> = {
@@ -101,7 +200,7 @@ const ResetPassword = () => {
       await supabase
         .from('profiles')
         .update(updates)
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
     }
 
     setSuccess(true);
