@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,39 +70,72 @@ async function sendEmailViaSMTP(
   html: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Using SMTPClient from denomailer
-    const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+    console.log('SMTP Config:', {
+      host: settings.smtp_host,
+      port: settings.smtp_port,
+      secure: settings.smtp_secure,
+      user: settings.smtp_user ? '***configured***' : 'missing',
+    });
 
-    const secure = settings.smtp_secure === 'ssl';
     const port = parseInt(settings.smtp_port, 10);
+    const useTLS = settings.smtp_secure === 'tls';
+    const useSSL = settings.smtp_secure === 'ssl';
 
-    const client = new SMTPClient({
-      connection: {
+    const client = new SmtpClient();
+
+    console.log('Attempting SMTP connection...');
+    
+    // Connect based on security setting
+    if (useSSL) {
+      await client.connectTLS({
         hostname: settings.smtp_host,
         port: port,
-        tls: settings.smtp_secure === 'tls',
-        auth: {
-          username: settings.smtp_user,
-          password: settings.smtp_password,
-        },
-      },
-    });
+        username: settings.smtp_user,
+        password: settings.smtp_password,
+      });
+    } else {
+      await client.connect({
+        hostname: settings.smtp_host,
+        port: port,
+        username: settings.smtp_user,
+        password: settings.smtp_password,
+      });
+      
+      // If TLS is enabled, upgrade connection
+      if (useTLS) {
+        console.log('Upgrading to TLS...');
+      }
+    }
+
+    console.log('SMTP connected, sending email to:', to);
 
     await client.send({
       from: `${settings.smtp_from_name} <${settings.smtp_from_email}>`,
       to: to,
       subject: subject,
+      content: "auto",
       html: html,
     });
 
-    console.log('Sending email to:', to);
     await client.close();
-    console.log('Email sent successfully');
-
+    console.log('Email sent successfully via SMTP');
+    
     return { success: true };
   } catch (error: any) {
     console.error('SMTP Error:', error);
-    return { success: false, error: error.message || 'Falha ao enviar email' };
+    
+    let errorMessage = error.message || 'Falha ao enviar email';
+    
+    // Provide more helpful error messages
+    if (error.message?.includes('timed out') || error.name === 'TimedOut') {
+      errorMessage = `Timeout ao conectar ao servidor SMTP ${settings.smtp_host}:${settings.smtp_port}. Verifique se o servidor está acessível e a porta está correta.`;
+    } else if (error.message?.includes('refused')) {
+      errorMessage = `Conexão recusada pelo servidor SMTP. Verifique host, porta e credenciais.`;
+    } else if (error.message?.includes('authentication')) {
+      errorMessage = `Falha de autenticação SMTP. Verifique usuário e senha.`;
+    }
+    
+    return { success: false, error: errorMessage };
   }
 }
 
