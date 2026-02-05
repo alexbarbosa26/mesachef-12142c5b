@@ -70,12 +70,23 @@ async function sendEmailViaSMTP(
     const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
 
     const port = parseInt(settings.smtp_port, 10);
+    const useTLS = settings.smtp_secure === 'tls' || settings.smtp_secure === 'ssl';
+
+    console.log('SMTP Config:', {
+      host: settings.smtp_host,
+      port: port,
+      secure: settings.smtp_secure,
+      useTLS: useTLS,
+      user: settings.smtp_user ? '***configured***' : 'missing',
+    });
+
+    console.log('Attempting SMTP connection...');
 
     const client = new SMTPClient({
       connection: {
         hostname: settings.smtp_host,
         port: port,
-        tls: settings.smtp_secure === 'tls',
+        tls: useTLS,
         auth: {
           username: settings.smtp_user,
           password: settings.smtp_password,
@@ -83,19 +94,34 @@ async function sendEmailViaSMTP(
       },
     });
 
+    console.log('SMTP connected, sending email to:', to);
+
     await client.send({
       from: `${settings.smtp_from_name} <${settings.smtp_from_email}>`,
       to: to,
       subject: subject,
       html: html,
     });
-    
+
     await client.close();
+    console.log('Email sent successfully via SMTP');
 
     return { success: true };
   } catch (error: any) {
     console.error('SMTP Error:', error);
-    return { success: false, error: error.message || 'Falha ao enviar email' };
+
+    let errorMessage = error.message || 'Falha ao enviar email';
+
+    // Provide more helpful error messages
+    if (error.message?.includes('timed out') || error.name === 'TimedOut') {
+      errorMessage = `Timeout ao conectar ao servidor SMTP ${settings.smtp_host}:${settings.smtp_port}. Verifique se o servidor está acessível e a porta está correta.`;
+    } else if (error.message?.includes('refused')) {
+      errorMessage = `Conexão recusada pelo servidor SMTP. Verifique host, porta e credenciais.`;
+    } else if (error.message?.includes('authentication')) {
+      errorMessage = `Falha de autenticação SMTP. Verifique usuário e senha.`;
+    }
+
+    return { success: false, error: errorMessage };
   }
 }
 
