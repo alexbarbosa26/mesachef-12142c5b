@@ -186,8 +186,8 @@ const Auth = () => {
   if (mode === 'login') {
     return <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md animate-scale-in">
-          <CardHeader className="text-center space-y-4">
-            <img alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" src="/lovable-uploads/2cecc139-a71a-4e19-9e87-20f404796c02.png" />
+        <CardHeader className="text-center space-y-4">
+            <img alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" src={logo} />
             <div>
               <CardTitle className="text-2xl font-bold">MesaChef</CardTitle>
               <CardDescription className="mt-2">
