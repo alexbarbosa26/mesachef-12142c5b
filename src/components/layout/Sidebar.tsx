@@ -80,7 +80,7 @@ const Sidebar = () => {
   const NavContent = () => <>
       <div className="p-6">
         <div className="flex items-center gap-3">
-          <img alt="MesaChef Logo" className="w-12 h-12 object-contain rounded-full" src="/lovable-uploads/3015fa65-4354-4611-9e7c-f288e1815663.png" />
+          <img alt="MesaChef Logo" className="w-12 h-12 object-contain" src={logo} />
           <div>
             <h1 className="font-bold text-sidebar-foreground">MesaChef</h1>
             <p className="text-xs text-sidebar-foreground/60">Estoque & Gestão</p>
@@ -128,7 +128,7 @@ const Sidebar = () => {
             <Menu className="w-6 h-6" />
           </Button>
           <div className="flex items-center gap-2 ml-3">
-            <img src={logo} alt="MesaChef Logo" className="w-8 h-8 object-contain rounded-full" />
+            <img src={logo} alt="MesaChef Logo" className="w-8 h-8 object-contain" />
             <span className="font-semibold text-foreground">MesaChef</span>
           </div>
         </div>
