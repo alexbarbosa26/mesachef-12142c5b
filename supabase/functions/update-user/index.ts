@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 // Input validation functions
 const isValidUUID = (id: string): boolean => {
@@ -48,9 +44,11 @@ interface UpdateUserRequest {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreFlight(req);
+  if (corsResponse) return corsResponse;
+
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -153,7 +151,6 @@ serve(async (req) => {
         .eq("user_id", user_id);
 
       if (profileError) {
-        console.error("Error updating profile:", profileError.message);
         return new Response(
           JSON.stringify({ error: getSafeErrorMessage(profileError) }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -161,9 +158,8 @@ serve(async (req) => {
       }
     }
 
-    // Update role if provided (use upsert in case user doesn't have a role yet)
+    // Update role if provided
     if (role !== undefined) {
-      // First check if user has a role
       const { data: existingRole } = await adminClient
         .from("user_roles")
         .select("id")
@@ -171,27 +167,23 @@ serve(async (req) => {
         .maybeSingle();
 
       if (existingRole) {
-        // Update existing role
         const { error: roleUpdateError } = await adminClient
           .from("user_roles")
           .update({ role })
           .eq("user_id", user_id);
 
         if (roleUpdateError) {
-          console.error("Error updating role:", roleUpdateError.message);
           return new Response(
             JSON.stringify({ error: getSafeErrorMessage(roleUpdateError) }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       } else {
-        // Insert new role
         const { error: roleInsertError } = await adminClient
           .from("user_roles")
           .insert({ user_id, role });
 
         if (roleInsertError) {
-          console.error("Error inserting role:", roleInsertError.message);
           return new Response(
             JSON.stringify({ error: getSafeErrorMessage(roleInsertError) }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -205,7 +197,6 @@ serve(async (req) => {
       try {
         await adminClient.auth.admin.signOut(user_id, "global");
       } catch (signOutError) {
-        console.error("Error signing out user:", signOutError);
         // Continue - user is updated, sign out is best effort
       }
     }
@@ -216,7 +207,7 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error("Error updating user:", error);
+    console.error("Error updating user");
     return new Response(
       JSON.stringify({ error: "Erro interno. Tente novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
