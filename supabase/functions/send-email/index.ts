@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 interface EmailRequest {
   to: string;
@@ -38,7 +34,7 @@ async function getSmtpSettings(supabase: any): Promise<SmtpSettings | null> {
     ]);
 
   if (error || !data) {
-    console.error('Error fetching SMTP settings:', error);
+    console.error('Error fetching SMTP settings');
     return null;
   }
 
@@ -71,17 +67,8 @@ async function sendEmailViaSMTP(
   try {
     const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
 
-    console.log('SMTP Config:', {
-      host: settings.smtp_host,
-      port: settings.smtp_port,
-      secure: settings.smtp_secure,
-      user: settings.smtp_user ? '***configured***' : 'missing',
-    });
-
     const port = parseInt(settings.smtp_port, 10);
     const useTLS = settings.smtp_secure === 'tls' || settings.smtp_secure === 'ssl';
-
-    console.log('Attempting SMTP connection...');
 
     const client = new SMTPClient({
       connection: {
@@ -95,8 +82,6 @@ async function sendEmailViaSMTP(
       },
     });
 
-    console.log('SMTP connected, sending email to:', to);
-
     await client.send({
       from: `${settings.smtp_from_name} <${settings.smtp_from_email}>`,
       to: to,
@@ -105,21 +90,20 @@ async function sendEmailViaSMTP(
     });
 
     await client.close();
-    console.log('Email sent successfully via SMTP');
+    console.log('Email sent successfully');
 
     return { success: true };
   } catch (error: any) {
-    console.error('SMTP Error:', error);
+    console.error('SMTP Error:', error.name || 'Unknown');
 
-    let errorMessage = error.message || 'Falha ao enviar email';
+    let errorMessage = 'Falha ao enviar email';
 
-    // Provide more helpful error messages
     if (error.message?.includes('timed out') || error.name === 'TimedOut') {
-      errorMessage = `Timeout ao conectar ao servidor SMTP ${settings.smtp_host}:${settings.smtp_port}. Verifique se o servidor está acessível e a porta está correta.`;
+      errorMessage = 'Timeout ao conectar ao servidor SMTP. Verifique as configurações.';
     } else if (error.message?.includes('refused')) {
-      errorMessage = `Conexão recusada pelo servidor SMTP. Verifique host, porta e credenciais.`;
+      errorMessage = 'Conexão recusada pelo servidor SMTP. Verifique host, porta e credenciais.';
     } else if (error.message?.includes('authentication')) {
-      errorMessage = `Falha de autenticação SMTP. Verifique usuário e senha.`;
+      errorMessage = 'Falha de autenticação SMTP. Verifique usuário e senha.';
     }
 
     return { success: false, error: errorMessage };
@@ -127,10 +111,11 @@ async function sendEmailViaSMTP(
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreFlight(req);
+  if (corsResponse) return corsResponse;
+
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -146,7 +131,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get SMTP settings from database
     const smtpSettings = await getSmtpSettings(supabase);
 
     if (!smtpSettings) {
@@ -159,7 +143,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Send email
     const result = await sendEmailViaSMTP(smtpSettings, to, subject, html);
 
     if (!result.success) {
@@ -169,16 +152,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Email ${isTest ? '(test)' : ''} sent successfully to ${to}`);
-
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
   } catch (error: any) {
-    console.error('Error in send-email function:', error);
+    console.error('Error in send-email function');
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: 'Erro ao enviar email' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
   }

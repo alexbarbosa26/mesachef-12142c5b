@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 interface PasswordResetRequest {
   email: string;
@@ -36,7 +32,7 @@ async function getSmtpSettings(supabase: any): Promise<SmtpSettings | null> {
     ]);
 
   if (error || !data) {
-    console.error('Error fetching SMTP settings:', error);
+    console.error('Error fetching SMTP settings');
     return null;
   }
 
@@ -72,16 +68,6 @@ async function sendEmailViaSMTP(
     const port = parseInt(settings.smtp_port, 10);
     const useTLS = settings.smtp_secure === 'tls' || settings.smtp_secure === 'ssl';
 
-    console.log('SMTP Config:', {
-      host: settings.smtp_host,
-      port: port,
-      secure: settings.smtp_secure,
-      useTLS: useTLS,
-      user: settings.smtp_user ? '***configured***' : 'missing',
-    });
-
-    console.log('Attempting SMTP connection...');
-
     const client = new SMTPClient({
       connection: {
         hostname: settings.smtp_host,
@@ -94,8 +80,6 @@ async function sendEmailViaSMTP(
       },
     });
 
-    console.log('SMTP connected, sending email to:', to);
-
     await client.send({
       from: `${settings.smtp_from_name} <${settings.smtp_from_email}>`,
       to: to,
@@ -104,21 +88,20 @@ async function sendEmailViaSMTP(
     });
 
     await client.close();
-    console.log('Email sent successfully via SMTP');
+    console.log('Password reset email sent successfully');
 
     return { success: true };
   } catch (error: any) {
-    console.error('SMTP Error:', error);
+    console.error('SMTP Error:', error.name || 'Unknown');
 
-    let errorMessage = error.message || 'Falha ao enviar email';
+    let errorMessage = 'Falha ao enviar email';
 
-    // Provide more helpful error messages
     if (error.message?.includes('timed out') || error.name === 'TimedOut') {
-      errorMessage = `Timeout ao conectar ao servidor SMTP ${settings.smtp_host}:${settings.smtp_port}. Verifique se o servidor está acessível e a porta está correta.`;
+      errorMessage = 'Timeout ao conectar ao servidor SMTP.';
     } else if (error.message?.includes('refused')) {
-      errorMessage = `Conexão recusada pelo servidor SMTP. Verifique host, porta e credenciais.`;
+      errorMessage = 'Conexão recusada pelo servidor SMTP.';
     } else if (error.message?.includes('authentication')) {
-      errorMessage = `Falha de autenticação SMTP. Verifique usuário e senha.`;
+      errorMessage = 'Falha de autenticação SMTP.';
     }
 
     return { success: false, error: errorMessage };
@@ -126,9 +109,11 @@ async function sendEmailViaSMTP(
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreFlight(req);
+  if (corsResponse) return corsResponse;
+
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -154,7 +139,6 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (linkError) {
-      console.error('Error generating reset link:', linkError);
       // Don't reveal if user exists or not for security
       return new Response(
         JSON.stringify({ success: true }),
@@ -167,7 +151,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!smtpSettings) {
       // Fallback: Use Supabase's built-in email if SMTP not configured
-      console.log('SMTP not configured, using Supabase built-in email');
       return new Response(
         JSON.stringify({ success: true, usedSupabase: true }),
         { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -227,20 +210,18 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     if (!result.success) {
-      console.error('Failed to send email:', result.error);
       // Still return success to not reveal if email exists
+      console.error('Failed to send password reset email');
     }
-
-    console.log(`Password reset email sent to ${email}`);
 
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
   } catch (error: any) {
-    console.error('Error in send-password-reset function:', error);
+    console.error('Error in send-password-reset function');
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: 'Erro interno' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
   }

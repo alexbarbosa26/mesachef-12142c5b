@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 // Input validation functions
 const isValidEmail = (email: string): boolean => {
@@ -13,7 +9,6 @@ const isValidEmail = (email: string): boolean => {
 };
 
 const isValidPassword = (password: string): boolean => {
-  // Min 6 chars, at least one letter and one number
   return password.length >= 6 && password.length <= 128;
 };
 
@@ -50,13 +45,13 @@ interface CreateUserRequest {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreFlight(req);
+  if (corsResponse) return corsResponse;
+
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
-    // Verify the requesting user is an admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -65,7 +60,6 @@ serve(async (req) => {
       );
     }
 
-    // Create client with user's token to verify they're an admin
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -74,7 +68,6 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Get the requesting user
     const { data: { user: requestingUser }, error: userError } = await userClient.auth.getUser();
     if (userError || !requestingUser) {
       return new Response(
@@ -97,7 +90,6 @@ serve(async (req) => {
       );
     }
 
-    // Parse and validate the request body
     const body = await req.json();
     const { email, password, full_name, role } = body as CreateUserRequest;
 
@@ -127,7 +119,6 @@ serve(async (req) => {
       );
     }
 
-    // Create admin client with service role key
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -135,7 +126,6 @@ serve(async (req) => {
       },
     });
 
-    // Create the user using admin API (doesn't affect current session)
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email: email.trim().toLowerCase(),
       password,
@@ -144,21 +134,18 @@ serve(async (req) => {
     });
 
     if (createError) {
-      console.error("Error creating user:", createError.message);
       return new Response(
         JSON.stringify({ error: getSafeErrorMessage(createError) }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Add the role for the new user
     const { error: roleInsertError } = await adminClient
       .from("user_roles")
       .insert({ user_id: newUser.user.id, role });
 
     if (roleInsertError) {
-      console.error("Error adding role:", roleInsertError.message);
-      // User was created but role failed - log for monitoring
+      console.error("Error adding role");
     }
 
     return new Response(
@@ -173,7 +160,7 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error("Error creating user:", error);
+    console.error("Error creating user");
     return new Response(
       JSON.stringify({ error: "Erro interno. Tente novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

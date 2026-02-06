@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 // Input validation
 const isValidUUID = (id: string): boolean => {
@@ -22,9 +18,11 @@ interface ResetPasswordRequest {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreFlight(req);
+  if (corsResponse) return corsResponse;
+
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -39,7 +37,6 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Client with user's session to verify they're an admin
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -84,7 +81,6 @@ serve(async (req) => {
       );
     }
 
-    // Admin client for privileged operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -98,7 +94,6 @@ serve(async (req) => {
     });
 
     if (updateError) {
-      console.error("Error resetting password:", updateError.message);
       return new Response(
         JSON.stringify({ error: "Erro ao redefinir senha" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -125,16 +120,14 @@ serve(async (req) => {
         .eq("user_id", user_id);
     }
 
-    // Log the action in audit
+    // Log the action in audit (without exposing details)
     await adminClient.rpc('create_audit_log', {
       p_user_id: requestingUser.id,
       p_action: 'ADMIN_PASSWORD_RESET',
       p_entity_type: 'user',
       p_entity_id: user_id,
-      p_details: { reset_by_admin: requestingUser.email },
+      p_details: {},
     });
-
-    console.log(`Password reset for user ${user_id} by admin ${requestingUser.email}`);
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -142,7 +135,7 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error("Error resetting password:", error);
+    console.error("Error resetting password");
     return new Response(
       JSON.stringify({ error: "Erro interno. Tente novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
