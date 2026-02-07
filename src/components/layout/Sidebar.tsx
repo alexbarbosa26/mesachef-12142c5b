@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -60,6 +60,11 @@ const Sidebar = () => {
     href: '/stock-valuation',
     icon: DollarSign,
     adminOnly: true
+  }, {
+    name: 'Precificação',
+    href: '/pricing',
+    icon: Calculator,
+    adminOnly: false
   }, {
     name: 'Usuários',
     href: '/users',
