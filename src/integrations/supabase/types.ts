@@ -116,6 +116,116 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_config_global: {
+        Row: {
+          fixed_expenses_pct: number
+          healthy_margin_threshold: number
+          id: string
+          investment_pct: number
+          price_proximity_factor: number
+          profit_pct: number
+          updated_at: string
+          updated_by: string | null
+          variable_expenses_pct: number
+        }
+        Insert: {
+          fixed_expenses_pct?: number
+          healthy_margin_threshold?: number
+          id?: string
+          investment_pct?: number
+          price_proximity_factor?: number
+          profit_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+          variable_expenses_pct?: number
+        }
+        Update: {
+          fixed_expenses_pct?: number
+          healthy_margin_threshold?: number
+          id?: string
+          investment_pct?: number
+          price_proximity_factor?: number
+          profit_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+          variable_expenses_pct?: number
+        }
+        Relationships: []
+      }
+      pricing_config_product: {
+        Row: {
+          fixed_expenses_pct: number | null
+          id: string
+          investment_pct: number | null
+          product_id: string
+          profit_pct: number | null
+          updated_at: string
+          updated_by: string | null
+          variable_expenses_pct: number | null
+        }
+        Insert: {
+          fixed_expenses_pct?: number | null
+          id?: string
+          investment_pct?: number | null
+          product_id: string
+          profit_pct?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          variable_expenses_pct?: number | null
+        }
+        Update: {
+          fixed_expenses_pct?: number | null
+          id?: string
+          investment_pct?: number | null
+          product_id?: string
+          profit_pct?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          variable_expenses_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_config_product_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pricing_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_products: {
+        Row: {
+          category: Database["public"]["Enums"]["product_category"]
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sale_unit: Database["public"]["Enums"]["sale_unit"]
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sale_unit?: Database["public"]["Enums"]["sale_unit"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sale_unit?: Database["public"]["Enums"]["sale_unit"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -267,6 +377,53 @@ export type Database = {
           },
         ]
       }
+      technical_sheets: {
+        Row: {
+          cmv: number
+          created_at: string
+          created_by: string | null
+          id: string
+          labor_cost_per_hour: number
+          notes: string | null
+          packaging_cost: number
+          prep_time_minutes: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          cmv?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          labor_cost_per_hour?: number
+          notes?: string | null
+          packaging_cost?: number
+          prep_time_minutes?: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          cmv?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          labor_cost_per_hour?: number
+          notes?: string | null
+          packaging_cost?: number
+          prep_time_minutes?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_sheets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pricing_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -314,6 +471,16 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff"
+      pricing_status: "saudavel" | "atencao" | "inviavel"
+      product_category:
+        | "cafe"
+        | "doce"
+        | "bolo"
+        | "combo"
+        | "salgado"
+        | "bebida"
+        | "outro"
+      sale_unit: "unidade" | "fatia" | "copo" | "porcao" | "kg" | "litro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -442,6 +609,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
+      pricing_status: ["saudavel", "atencao", "inviavel"],
+      product_category: [
+        "cafe",
+        "doce",
+        "bolo",
+        "combo",
+        "salgado",
+        "bebida",
+        "outro",
+      ],
+      sale_unit: ["unidade", "fatia", "copo", "porcao", "kg", "litro"],
     },
   },
 } as const

@@ -16,6 +16,9 @@ import StockValuation from "./pages/StockValuation";
 import Users from "./pages/Users";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
+import PricingProducts from "./pages/PricingProducts";
+import TechnicalSheetPage from "./pages/TechnicalSheetPage";
+import PricingConfig from "./pages/PricingConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +40,9 @@ const App = () => (
             <Route path="/stock-management" element={<Dashboard />} />
             <Route path="/stock-entry" element={<StockEntry />} />
             <Route path="/stock-valuation" element={<StockValuation />} />
+            <Route path="/pricing" element={<PricingProducts />} />
+            <Route path="/pricing/sheet/:productId" element={<TechnicalSheetPage />} />
+            <Route path="/pricing/config" element={<PricingConfig />} />
             <Route path="/users" element={<Users />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/settings" element={<Settings />} />
