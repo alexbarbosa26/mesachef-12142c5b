@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import PricingProducts from "./pages/PricingProducts";
 import TechnicalSheetPage from "./pages/TechnicalSheetPage";
 import PricingConfig from "./pages/PricingConfig";
+import PricingReports from "./pages/PricingReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/pricing" element={<PricingProducts />} />
             <Route path="/pricing/sheet/:productId" element={<TechnicalSheetPage />} />
             <Route path="/pricing/config" element={<PricingConfig />} />
+            <Route path="/pricing/reports" element={<PricingReports />} />
             <Route path="/users" element={<Users />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/settings" element={<Settings />} />

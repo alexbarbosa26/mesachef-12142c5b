@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -65,6 +65,11 @@ const Sidebar = () => {
     href: '/pricing',
     icon: Calculator,
     adminOnly: false
+  }, {
+    name: 'Relatórios',
+    href: '/pricing/reports',
+    icon: BarChart3,
+    adminOnly: true
   }, {
     name: 'Usuários',
     href: '/users',
