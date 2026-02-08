@@ -377,6 +377,54 @@ export type Database = {
           },
         ]
       }
+      technical_sheet_ingredients: {
+        Row: {
+          calculated_cost: number
+          created_at: string
+          id: string
+          quantity: number
+          stock_item_id: string
+          technical_sheet_id: string
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          calculated_cost?: number
+          created_at?: string
+          id?: string
+          quantity?: number
+          stock_item_id: string
+          technical_sheet_id: string
+          unit_type?: string
+          updated_at?: string
+        }
+        Update: {
+          calculated_cost?: number
+          created_at?: string
+          id?: string
+          quantity?: number
+          stock_item_id?: string
+          technical_sheet_id?: string
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_sheet_ingredients_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_sheet_ingredients_technical_sheet_id_fkey"
+            columns: ["technical_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "technical_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       technical_sheets: {
         Row: {
           cmv: number
