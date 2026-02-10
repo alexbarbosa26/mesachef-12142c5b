@@ -43,7 +43,7 @@ interface EditedItem {
 }
 
 const StockEntry = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const {
     categories,
     stockItems,
@@ -147,7 +147,7 @@ const StockEntry = () => {
       current_quantity: edit.current_quantity,
       expiry_date: edit.expiry_date,
       count_date: format(new Date(), 'yyyy-MM-dd'),
-      responsible_user: user?.id || '',
+      ...(isAdmin ? { responsible_user: user?.id || '' } : {}),
     }));
 
     const success = await bulkUpdateStock(updates);
