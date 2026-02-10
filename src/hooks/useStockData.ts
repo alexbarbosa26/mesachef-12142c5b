@@ -249,7 +249,7 @@ export const useStockData = () => {
       current_quantity: number;
       expiry_date: string | null;
       count_date: string;
-      responsible_user: string;
+      responsible_user?: string;
     }>
   ) => {
     // Capture previous values for audit logging
@@ -265,25 +265,31 @@ export const useStockData = () => {
       };
     });
 
-    const promises = updates.map((update) =>
-      supabase
+    const promises = updates.map((update) => {
+      const updatePayload: Record<string, any> = {
+        current_quantity: update.current_quantity,
+        expiry_date: update.expiry_date,
+        count_date: update.count_date,
+      };
+      if (update.responsible_user) {
+        updatePayload.responsible_user = update.responsible_user;
+      }
+      return supabase
         .from('stock_items')
-        .update({
-          current_quantity: update.current_quantity,
-          expiry_date: update.expiry_date,
-          count_date: update.count_date,
-          responsible_user: update.responsible_user,
-        })
+        .update(updatePayload)
         .eq('id', update.id)
-    );
+        .select();
+    });
 
     const results = await Promise.all(promises);
     const errors = results.filter((r) => r.error);
+    const silentFailures = results.filter((r) => !r.error && (!r.data || r.data.length === 0));
 
-    if (errors.length > 0) {
+    if (errors.length > 0 || silentFailures.length > 0) {
+      const totalFailed = errors.length + silentFailures.length;
       toast({
-        title: 'Erro',
-        description: `Erro ao atualizar ${errors.length} itens`,
+        title: 'Erro de permissão',
+        description: `${totalFailed} item(ns) não puderam ser atualizados. Verifique se você tem permissão para editar esses itens.`,
         variant: 'destructive',
       });
       return false;
