@@ -119,7 +119,45 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // --- Authentication: require a valid user session ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Não autorizado' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Sessão inválida' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // --- Authorization: only admins can send emails ---
+    const { data: roleData } = await userClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (roleData?.role !== 'admin') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Apenas administradores podem enviar emails' }),
+        { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // --- Input validation ---
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { to, subject, html, isTest }: EmailRequest = await req.json();
@@ -127,6 +165,15 @@ const handler = async (req: Request): Promise<Response> => {
     if (!to || !subject || !html) {
       return new Response(
         JSON.stringify({ success: false, error: 'Campos obrigatórios: to, subject, html' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to) || to.length > 255) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Email de destino inválido' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
