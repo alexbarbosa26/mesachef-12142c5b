@@ -71,7 +71,7 @@ const StockEntry = () => {
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
   const filteredItems = useMemo(() => {
-    let items = stockItems;
+    let items = stockItems.filter((item) => item.is_active);
 
     if (selectedCategory !== 'all') {
       items = items.filter((item) => item.category_id === selectedCategory);
