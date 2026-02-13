@@ -20,6 +20,7 @@ export interface StockItem {
   count_date: string | null;
   expiry_date: string | null;
   responsible_user: string | null;
+  is_active: boolean;
 }
 
 export interface StockItemWithCategory extends StockItem {

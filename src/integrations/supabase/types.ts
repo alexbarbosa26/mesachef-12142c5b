@@ -332,6 +332,7 @@ export type Database = {
           current_quantity: number
           expiry_date: string | null
           id: string
+          is_active: boolean
           minimum_stock: number
           name: string
           responsible_user: string | null
@@ -346,6 +347,7 @@ export type Database = {
           current_quantity?: number
           expiry_date?: string | null
           id?: string
+          is_active?: boolean
           minimum_stock?: number
           name: string
           responsible_user?: string | null
@@ -360,6 +362,7 @@ export type Database = {
           current_quantity?: number
           expiry_date?: string | null
           id?: string
+          is_active?: boolean
           minimum_stock?: number
           name?: string
           responsible_user?: string | null

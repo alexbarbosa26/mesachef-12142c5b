@@ -25,8 +25,10 @@ const Sidebar = () => {
     settings
   } = useSettings();
 
-  // Calculate alerts count
+  // Calculate alerts count (only active items)
   const alertsCount = stockItems.filter(item => {
+    if (!item.is_active) return false;
+
     // Out of stock
     if (item.current_quantity === 0) return true;
 

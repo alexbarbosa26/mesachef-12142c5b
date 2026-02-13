@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ExpiryBadge, getExpiryStatus } from '@/components/ExpiryBadge';
+import { Switch } from '@/components/ui/switch';
 
 const UNITS = ['kg', 'g', 'L', 'ml', 'unidades', 'caixas', 'pacotes'];
 
@@ -623,6 +624,11 @@ const Dashboard = () => {
                             Validade
                           </TableHead>
                           {isAdmin && (
+                            <TableHead className="font-semibold w-16 text-center">
+                              Ativo
+                            </TableHead>
+                          )}
+                          {isAdmin && (
                             <TableHead className="font-semibold w-20">
                               Ações
                             </TableHead>
@@ -642,7 +648,8 @@ const Dashboard = () => {
                               key={item.id}
                               className={cn(
                                 index % 2 === 1 && 'bg-table-row-alt',
-                                expiringSoon && 'row-expiry-alert'
+                                expiringSoon && 'row-expiry-alert',
+                                !item.is_active && 'opacity-50'
                               )}
                             >
                               <TableCell className="font-medium">
@@ -687,6 +694,16 @@ const Dashboard = () => {
                                   />
                                 </div>
                               </TableCell>
+                              {isAdmin && (
+                                <TableCell className="text-center">
+                                  <Switch
+                                    checked={item.is_active}
+                                    onCheckedChange={(checked) =>
+                                      updateStockItem(item.id, { is_active: checked } as any)
+                                    }
+                                  />
+                                </TableCell>
+                              )}
                               {isAdmin && (
                                 <TableCell>
                                   <div className="flex gap-1">

@@ -37,20 +37,21 @@ const DashboardOverview = () => {
   const { getVariation } = useStockHistory();
 
   const stats = useMemo(() => {
-    const totalItems = stockItems.length;
+    const activeItems = stockItems.filter((item) => item.is_active);
+    const totalItems = activeItems.length;
     
-    const outOfStockItems = stockItems.filter(
+    const outOfStockItems = activeItems.filter(
       (item) => item.current_quantity === 0
     );
     
     const lowStockThreshold = settings.low_stock_percentage || 20;
-    const lowStockItems = stockItems.filter((item) => {
-      if (item.current_quantity === 0) return false; // Already counted as out of stock
+    const lowStockItems = activeItems.filter((item) => {
+      if (item.current_quantity === 0) return false;
       const threshold = item.minimum_stock * (1 + lowStockThreshold / 100);
       return item.current_quantity > 0 && item.current_quantity <= threshold;
     });
     
-    const expiringItems = stockItems.filter((item) => {
+    const expiringItems = activeItems.filter((item) => {
       const { status } = getExpiryStatus(item.expiry_date, settings.expiry_alert_days);
       return status === 'expired' || status === 'expiring';
     });
