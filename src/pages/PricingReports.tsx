@@ -131,11 +131,10 @@ export default function PricingReports() {
         return (a.pricing?.contribution_margin_pct || 0) - (b.pricing?.contribution_margin_pct || 0);
       });
 
-    // Dados para gráfico de barras (margens por categoria)
-    const marginChartData = byCategory.map(c => ({
-      name: c.label,
-      'Margem Média (%)': Number(c.avgMargin.toFixed(1)),
-      'Produtos': c.count,
+    // Dados para gráfico de barras (margens por produto)
+    const marginChartData = productsWithPricing.map(p => ({
+      name: p.name.length > 15 ? p.name.substring(0, 15) + '…' : p.name,
+      'Margem (%)': Number((p.pricing?.contribution_margin_pct || 0).toFixed(1)),
     }));
 
     // Dados para gráfico de pizza (status)
@@ -301,19 +300,19 @@ export default function PricingReports() {
                 {/* Gráfico de Barras - Margem por Categoria */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Margem por Categoria</CardTitle>
-                    <CardDescription>Margem média de contribuição por categoria de produto</CardDescription>
+                    <CardTitle>Margem por Produto</CardTitle>
+                    <CardDescription>Margem de contribuição por produto</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {reportData.marginChartData.length > 0 ? (
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={reportData.marginChartData}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
+                          <XAxis dataKey="name" angle={-35} textAnchor="end" height={80} fontSize={11} />
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="Margem Média (%)" fill="hsl(var(--primary))" />
+                          <Bar dataKey="Margem (%)" fill="hsl(var(--primary))" />
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
