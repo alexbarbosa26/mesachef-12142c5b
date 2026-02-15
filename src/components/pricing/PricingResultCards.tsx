@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalculatedPricing } from '@/hooks/usePricingData';
 import { PricingStatusBadge } from './PricingStatusBadge';
-import { DollarSign, TrendingUp, PiggyBank, AlertCircle, Target, BarChart3 } from 'lucide-react';
+import { DollarSign, TrendingUp, PiggyBank, AlertCircle, Target, BarChart3, Scale, Slice } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PricingResultCardsProps {
@@ -128,6 +128,40 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
               </p>
             </CardContent>
           </Card>
+
+          {/* Per KG and Per Portion */}
+          {(pricing.cost_per_kg !== undefined || pricing.cost_per_portion !== undefined) && (
+            <div className="grid grid-cols-2 gap-3">
+              {pricing.cost_per_kg !== undefined && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-orange-600" />
+                      Por KG
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Custo: {formatCurrency(pricing.cost_per_kg)}</p>
+                    <p className="text-lg font-semibold text-orange-600">Preço: {formatCurrency(pricing.price_per_kg!)}</p>
+                  </CardContent>
+                </Card>
+              )}
+              {pricing.cost_per_portion !== undefined && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Slice className="w-4 h-4 text-violet-600" />
+                      Por Porção
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Custo: {formatCurrency(pricing.cost_per_portion)}</p>
+                    <p className="text-lg font-semibold text-violet-600">Preço: {formatCurrency(pricing.price_per_portion!)}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

@@ -438,10 +438,10 @@ export type Database = {
           notes: string | null
           packaging_cost: number
           prep_time_minutes: number
-          price_per_kg: number
-          price_per_portion: number
           product_id: string
           updated_at: string
+          yield_kg: number
+          yield_portions: number
         }
         Insert: {
           cmv?: number
@@ -452,10 +452,10 @@ export type Database = {
           notes?: string | null
           packaging_cost?: number
           prep_time_minutes?: number
-          price_per_kg?: number
-          price_per_portion?: number
           product_id: string
           updated_at?: string
+          yield_kg?: number
+          yield_portions?: number
         }
         Update: {
           cmv?: number
@@ -466,10 +466,10 @@ export type Database = {
           notes?: string | null
           packaging_cost?: number
           prep_time_minutes?: number
-          price_per_kg?: number
-          price_per_portion?: number
           product_id?: string
           updated_at?: string
+          yield_kg?: number
+          yield_portions?: number
         }
         Relationships: [
           {
