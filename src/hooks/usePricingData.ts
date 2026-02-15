@@ -26,6 +26,8 @@ export interface TechnicalSheet {
   labor_cost_per_hour: number;
   prep_time_minutes: number;
   packaging_cost: number;
+  price_per_kg: number;
+  price_per_portion: number;
   notes: string | null;
   created_by: string | null;
   created_at: string;
