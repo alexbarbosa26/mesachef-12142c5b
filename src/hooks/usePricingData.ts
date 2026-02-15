@@ -26,8 +26,8 @@ export interface TechnicalSheet {
   labor_cost_per_hour: number;
   prep_time_minutes: number;
   packaging_cost: number;
-  price_per_kg: number;
-  price_per_portion: number;
+  yield_kg: number;
+  yield_portions: number;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -71,6 +71,10 @@ export interface CalculatedPricing {
   investment_per_unit: number;
   contribution_margin: number;
   contribution_margin_pct: number;
+  cost_per_kg?: number;
+  price_per_kg?: number;
+  cost_per_portion?: number;
+  price_per_portion?: number;
   status: PricingStatus;
   error?: string;
 }
@@ -167,6 +171,12 @@ export function calculatePricing(
     status = 'atencao';
   }
 
+  // Custo e preço por KG e por porção
+  const cost_per_kg = sheet.yield_kg > 0 ? cvu / sheet.yield_kg : undefined;
+  const price_per_kg = sheet.yield_kg > 0 ? pv / sheet.yield_kg : undefined;
+  const cost_per_portion = sheet.yield_portions > 0 ? cvu / sheet.yield_portions : undefined;
+  const price_per_portion = sheet.yield_portions > 0 ? pv / sheet.yield_portions : undefined;
+
   return {
     cvu,
     pv,
@@ -175,6 +185,10 @@ export function calculatePricing(
     investment_per_unit,
     contribution_margin,
     contribution_margin_pct,
+    cost_per_kg,
+    price_per_kg,
+    cost_per_portion,
+    price_per_portion,
     status,
   };
 }

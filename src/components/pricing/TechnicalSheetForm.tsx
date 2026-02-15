@@ -55,8 +55,8 @@ export function TechnicalSheetForm({
   const [prepTimeMinutes, setPrepTimeMinutes] = useState('0');
   const [packagingCost, setPackagingCost] = useState('0');
   const [notes, setNotes] = useState('');
-  const [pricePerKg, setPricePerKg] = useState('0');
-  const [pricePerPortion, setPricePerPortion] = useState('0');
+  const [yieldKg, setYieldKg] = useState('0');
+  const [yieldPortions, setYieldPortions] = useState('0');
   const [ingredients, setIngredients] = useState<LocalIngredient[]>([]);
 
   const { stockItems } = useStockData();
@@ -71,16 +71,16 @@ export function TechnicalSheetForm({
       setLaborCostPerHour(sheet.labor_cost_per_hour.toString());
       setPrepTimeMinutes(sheet.prep_time_minutes.toString());
       setPackagingCost(sheet.packaging_cost.toString());
-      setPricePerKg(sheet.price_per_kg.toString());
-      setPricePerPortion(sheet.price_per_portion.toString());
+      setYieldKg(sheet.yield_kg.toString());
+      setYieldPortions(sheet.yield_portions.toString());
       setNotes(sheet.notes || '');
     } else {
       setManualCmv('0');
       setLaborCostPerHour('0');
       setPrepTimeMinutes('0');
       setPackagingCost('0');
-      setPricePerKg('0');
-      setPricePerPortion('0');
+      setYieldKg('0');
+      setYieldPortions('0');
       setNotes('');
     }
   }, [sheet]);
@@ -114,8 +114,8 @@ export function TechnicalSheetForm({
     const laborNum = parseFloat(laborCostPerHour) || 0;
     const prepNum = parseInt(prepTimeMinutes) || 0;
     const packNum = parseFloat(packagingCost) || 0;
-    const pkgNum = parseFloat(pricePerKg) || 0;
-    const portionNum = parseFloat(pricePerPortion) || 0;
+    const yieldKgNum = parseFloat(yieldKg) || 0;
+    const yieldPortionsNum = parseFloat(yieldPortions) || 0;
 
     return {
       id: sheet?.id || '',
@@ -124,14 +124,14 @@ export function TechnicalSheetForm({
       labor_cost_per_hour: laborNum,
       prep_time_minutes: prepNum,
       packaging_cost: packNum,
-      price_per_kg: pkgNum,
-      price_per_portion: portionNum,
+      yield_kg: yieldKgNum,
+      yield_portions: yieldPortionsNum,
       notes: notes,
       created_by: null,
       created_at: '',
       updated_at: '',
     };
-  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, pricePerKg, pricePerPortion, notes, productId, sheet?.id]);
+  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, yieldKg, yieldPortions, notes, productId, sheet?.id]);
 
   const pricing = useMemo(() => {
     return calculatePricing(liveSheet, globalConfig, productConfig);
@@ -148,8 +148,8 @@ export function TechnicalSheetForm({
         labor_cost_per_hour: parseFloat(laborCostPerHour) || 0,
         prep_time_minutes: parseInt(prepTimeMinutes) || 0,
         packaging_cost: parseFloat(packagingCost) || 0,
-        price_per_kg: parseFloat(pricePerKg) || 0,
-        price_per_portion: parseFloat(pricePerPortion) || 0,
+        yield_kg: parseFloat(yieldKg) || 0,
+        yield_portions: parseFloat(yieldPortions) || 0,
         notes: notes || null,
       });
 
@@ -309,33 +309,33 @@ export function TechnicalSheetForm({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pricePerKg">Preço por KG (R$)</Label>
+                  <Label htmlFor="yieldKg">Rendimento (KG)</Label>
                   <Input
-                    id="pricePerKg"
+                    id="yieldKg"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={pricePerKg}
-                    onChange={(e) => setPricePerKg(formatCurrencyInput(e.target.value))}
+                    value={yieldKg}
+                    onChange={(e) => setYieldKg(formatCurrencyInput(e.target.value))}
                     placeholder="0.00"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pricePerPortion">Preço por Porção (R$)</Label>
+                  <Label htmlFor="yieldPortions">Rendimento (Porções)</Label>
                   <Input
-                    id="pricePerPortion"
+                    id="yieldPortions"
                     type="number"
-                    step="0.01"
+                    step="1"
                     min="0"
-                    value={pricePerPortion}
-                    onChange={(e) => setPricePerPortion(formatCurrencyInput(e.target.value))}
-                    placeholder="0.00"
+                    value={yieldPortions}
+                    onChange={(e) => setYieldPortions(e.target.value)}
+                    placeholder="0"
                   />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Valores de referência para venda por peso ou porção
+                Informe o rendimento da receita para calcular custo e preço por KG e por porção
               </p>
 
               <div className="space-y-2">
