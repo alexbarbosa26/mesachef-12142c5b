@@ -15,14 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Mail, Save, Loader2, Send, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Mail, Save, Loader2, Send, Check, X } from 'lucide-react';
 
 interface EmailSettings {
   smtp_host: string;
   smtp_port: string;
   smtp_secure: string;
   smtp_user: string;
-  smtp_password: string;
   smtp_from_email: string;
   smtp_from_name: string;
 }
@@ -33,7 +32,6 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   
   const [settings, setSettings] = useState<EmailSettings>({
@@ -41,7 +39,6 @@ const Settings = () => {
     smtp_port: '587',
     smtp_secure: 'tls',
     smtp_user: '',
-    smtp_password: '',
     smtp_from_email: '',
     smtp_from_name: 'MesaChef',
   });
@@ -60,7 +57,6 @@ const Settings = () => {
         'smtp_port',
         'smtp_secure',
         'smtp_user',
-        'smtp_password',
         'smtp_from_email',
         'smtp_from_name',
       ]);
@@ -82,7 +78,6 @@ const Settings = () => {
         smtp_port: settingsMap.smtp_port || '587',
         smtp_secure: settingsMap.smtp_secure || 'tls',
         smtp_user: settingsMap.smtp_user || '',
-        smtp_password: settingsMap.smtp_password || '',
         smtp_from_email: settingsMap.smtp_from_email || '',
         smtp_from_name: settingsMap.smtp_from_name || 'MesaChef',
       });
@@ -268,33 +263,17 @@ const Settings = () => {
                 />
               </div>
 
-              {/* SMTP Password */}
+              {/* SMTP Password - managed via secure secrets */}
               <div className="space-y-2">
-                <Label htmlFor="smtp_password">Senha / App Password</Label>
-                <div className="relative">
-                  <Input
-                    id="smtp_password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={settings.smtp_password}
-                    onChange={(e) => setSettings({ ...settings, smtp_password: e.target.value })}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="w-4 h-4 text-muted-foreground" />
-                    )}
-                  </Button>
+                <Label>Senha / App Password</Label>
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+                  <Check className="w-4 h-4 text-success" />
+                  <span className="text-sm text-muted-foreground">
+                    Senha SMTP gerenciada de forma segura via configurações do servidor.
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Para Gmail, use uma Senha de App (App Password)
+                  Para alterar a senha SMTP, entre em contato com o administrador do sistema.
                 </p>
               </div>
 

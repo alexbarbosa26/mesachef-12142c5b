@@ -18,6 +18,13 @@ interface SmtpSettings {
 }
 
 async function getSmtpSettings(supabase: any): Promise<SmtpSettings | null> {
+  // Read SMTP password from secure environment variable (not from database)
+  const smtpPassword = Deno.env.get('SMTP_PASSWORD');
+  if (!smtpPassword) {
+    console.error('SMTP_PASSWORD secret not configured');
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('settings')
     .select('key, value')
@@ -26,7 +33,6 @@ async function getSmtpSettings(supabase: any): Promise<SmtpSettings | null> {
       'smtp_port',
       'smtp_secure',
       'smtp_user',
-      'smtp_password',
       'smtp_from_email',
       'smtp_from_name',
     ]);
@@ -41,7 +47,7 @@ async function getSmtpSettings(supabase: any): Promise<SmtpSettings | null> {
     settingsMap[s.key] = s.value;
   });
 
-  if (!settingsMap.smtp_host || !settingsMap.smtp_user || !settingsMap.smtp_password) {
+  if (!settingsMap.smtp_host || !settingsMap.smtp_user) {
     return null;
   }
 
@@ -50,7 +56,7 @@ async function getSmtpSettings(supabase: any): Promise<SmtpSettings | null> {
     smtp_port: settingsMap.smtp_port || '587',
     smtp_secure: settingsMap.smtp_secure || 'tls',
     smtp_user: settingsMap.smtp_user,
-    smtp_password: settingsMap.smtp_password,
+    smtp_password: smtpPassword,
     smtp_from_email: settingsMap.smtp_from_email || settingsMap.smtp_user,
     smtp_from_name: settingsMap.smtp_from_name || 'MesaChef',
   };
