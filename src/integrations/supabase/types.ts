@@ -439,6 +439,7 @@ export type Database = {
           packaging_cost: number
           prep_time_minutes: number
           product_id: string
+          sale_price: number
           updated_at: string
           yield_kg: number
           yield_portions: number
@@ -453,6 +454,7 @@ export type Database = {
           packaging_cost?: number
           prep_time_minutes?: number
           product_id: string
+          sale_price?: number
           updated_at?: string
           yield_kg?: number
           yield_portions?: number
@@ -467,6 +469,7 @@ export type Database = {
           packaging_cost?: number
           prep_time_minutes?: number
           product_id?: string
+          sale_price?: number
           updated_at?: string
           yield_kg?: number
           yield_portions?: number
