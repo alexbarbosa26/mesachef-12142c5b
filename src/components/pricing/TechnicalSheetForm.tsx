@@ -55,6 +55,7 @@ export function TechnicalSheetForm({
   const [prepTimeMinutes, setPrepTimeMinutes] = useState('0');
   const [packagingCost, setPackagingCost] = useState('0');
   const [notes, setNotes] = useState('');
+  const [salePrice, setSalePrice] = useState('0');
   const [yieldKg, setYieldKg] = useState('0');
   const [yieldPortions, setYieldPortions] = useState('0');
   const [ingredients, setIngredients] = useState<LocalIngredient[]>([]);
@@ -73,6 +74,7 @@ export function TechnicalSheetForm({
       setPackagingCost(sheet.packaging_cost.toString());
       setYieldKg(sheet.yield_kg.toString());
       setYieldPortions(sheet.yield_portions.toString());
+      setSalePrice(sheet.sale_price?.toString() || '0');
       setNotes(sheet.notes || '');
     } else {
       setManualCmv('0');
@@ -81,6 +83,7 @@ export function TechnicalSheetForm({
       setPackagingCost('0');
       setYieldKg('0');
       setYieldPortions('0');
+      setSalePrice('0');
       setNotes('');
     }
   }, [sheet]);
@@ -116,6 +119,7 @@ export function TechnicalSheetForm({
     const packNum = parseFloat(packagingCost) || 0;
     const yieldKgNum = parseFloat(yieldKg) || 0;
     const yieldPortionsNum = parseFloat(yieldPortions) || 0;
+    const salePriceNum = parseFloat(salePrice) || 0;
 
     return {
       id: sheet?.id || '',
@@ -126,12 +130,13 @@ export function TechnicalSheetForm({
       packaging_cost: packNum,
       yield_kg: yieldKgNum,
       yield_portions: yieldPortionsNum,
+      sale_price: salePriceNum,
       notes: notes,
       created_by: null,
       created_at: '',
       updated_at: '',
     };
-  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, yieldKg, yieldPortions, notes, productId, sheet?.id]);
+  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, yieldKg, yieldPortions, salePrice, notes, productId, sheet?.id]);
 
   const pricing = useMemo(() => {
     return calculatePricing(liveSheet, globalConfig, productConfig);
@@ -150,6 +155,7 @@ export function TechnicalSheetForm({
         packaging_cost: parseFloat(packagingCost) || 0,
         yield_kg: parseFloat(yieldKg) || 0,
         yield_portions: parseFloat(yieldPortions) || 0,
+        sale_price: parseFloat(salePrice) || 0,
         notes: notes || null,
       });
 
@@ -337,6 +343,24 @@ export function TechnicalSheetForm({
               <p className="text-xs text-muted-foreground">
                 Informe o rendimento da receita para calcular custo e preço por KG e por porção
               </p>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="salePrice">Preço de Venda Praticado (R$)</Label>
+                <Input
+                  id="salePrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={salePrice}
+                  onChange={(e) => setSalePrice(formatCurrencyInput(e.target.value))}
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Informe o preço real que você cobra. Será comparado com o preço sugerido para definir a viabilidade.
+                </p>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>
