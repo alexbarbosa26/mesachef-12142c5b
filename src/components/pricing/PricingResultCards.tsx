@@ -53,7 +53,7 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-primary" />
-              Preço de Venda
+              Preço Sugerido
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -75,6 +75,28 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
           </CardContent>
         </Card>
       </div>
+
+      {/* Sale Price Card */}
+      {pricing.sale_price > 0 && (
+        <Card className={`border-2 ${pricing.status === 'saudavel' ? 'border-green-500/30 bg-green-500/5' : pricing.status === 'atencao' ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Preço de Venda Praticado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-2xl font-bold ${pricing.status === 'saudavel' ? 'text-green-600' : pricing.status === 'atencao' ? 'text-yellow-600' : 'text-red-600'}`}>
+              {formatCurrency(pricing.sale_price)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {pricing.status === 'saudavel' && 'Acima do preço sugerido ✓'}
+              {pricing.status === 'atencao' && 'Abaixo do sugerido, acima do mínimo ⚠'}
+              {pricing.status === 'inviavel' && 'Abaixo do preço mínimo ✗'}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {showDetailed && (
         <>

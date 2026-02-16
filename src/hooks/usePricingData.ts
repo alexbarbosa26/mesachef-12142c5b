@@ -28,6 +28,7 @@ export interface TechnicalSheet {
   packaging_cost: number;
   yield_kg: number;
   yield_portions: number;
+  sale_price: number;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -67,6 +68,7 @@ export interface CalculatedPricing {
   cvu: number;
   pv: number;
   pm: number;
+  sale_price: number;
   profit_per_unit: number;
   investment_per_unit: number;
   contribution_margin: number;
@@ -119,6 +121,7 @@ export function calculatePricing(
       cvu: 0,
       pv: 0,
       pm: 0,
+      sale_price: sheet.sale_price || 0,
       profit_per_unit: 0,
       investment_per_unit: 0,
       contribution_margin: 0,
@@ -133,6 +136,7 @@ export function calculatePricing(
       cvu: 0,
       pv: 0,
       pm: 0,
+      sale_price: sheet.sale_price || 0,
       profit_per_unit: 0,
       investment_per_unit: 0,
       contribution_margin: 0,
@@ -159,16 +163,31 @@ export function calculatePricing(
   const contribution_margin = pv - cvu - (pv * dv);
   const contribution_margin_pct = pv > 0 ? (contribution_margin / pv) * 100 : 0;
 
-  // Determina status
+  // Preço de venda informado pelo usuário
+  const sale_price = sheet.sale_price || 0;
+
+  // Determina status baseado no preço de venda informado vs sugerido/mínimo
   let status: PricingStatus = 'saudavel';
   
-  if (pv <= pm) {
-    status = 'inviavel';
-  } else if (
-    pv <= pm * globalConfig.price_proximity_factor ||
-    contribution_margin_pct < globalConfig.healthy_margin_threshold
-  ) {
-    status = 'atencao';
+  if (sale_price > 0) {
+    // Se tem preço de venda informado, compara com sugerido e mínimo
+    if (sale_price < pm) {
+      status = 'inviavel';
+    } else if (sale_price < pv) {
+      status = 'atencao';
+    } else {
+      status = 'saudavel';
+    }
+  } else {
+    // Sem preço de venda informado, usa lógica original
+    if (pv <= pm) {
+      status = 'inviavel';
+    } else if (
+      pv <= pm * globalConfig.price_proximity_factor ||
+      contribution_margin_pct < globalConfig.healthy_margin_threshold
+    ) {
+      status = 'atencao';
+    }
   }
 
   // Custo e preço por KG e por porção
@@ -181,6 +200,7 @@ export function calculatePricing(
     cvu,
     pv,
     pm,
+    sale_price,
     profit_per_unit,
     investment_per_unit,
     contribution_margin,
