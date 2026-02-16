@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PricingResultCardsProps {
   pricing: CalculatedPricing | undefined;
+  salePrice?: number;
   showDetailed?: boolean;
 }
 
@@ -20,7 +21,7 @@ function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-export function PricingResultCards({ pricing, showDetailed = true }: PricingResultCardsProps) {
+export function PricingResultCards({ pricing, salePrice = 0, showDetailed = true }: PricingResultCardsProps) {
   if (!pricing) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -53,28 +54,59 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-primary" />
-              Preço de Venda
+              Preço Sugerido
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-primary">{formatCurrency(pricing.pv)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Com lucro e investimento</p>
+            <p className="text-xs text-muted-foreground mt-1">Calculado pela metodologia SEBRAE</p>
           </CardContent>
         </Card>
 
-        <Card className="border-yellow-500/20 bg-yellow-500/5">
+        <Card className={salePrice > 0 ? (salePrice >= pricing.pv ? 'border-green-500/20 bg-green-500/5' : salePrice >= pricing.pm ? 'border-yellow-500/20 bg-yellow-500/5' : 'border-red-500/20 bg-red-500/5') : 'border-muted/20 bg-muted/5'}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Target className="w-4 h-4 text-yellow-600" />
-              Preço Mínimo
+              <Target className="w-4 h-4 text-foreground" />
+              Preço de Venda
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-yellow-600">{formatCurrency(pricing.pm)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Sobrevivência (sem lucro)</p>
+            {salePrice > 0 ? (
+              <>
+                <p className={`text-2xl font-bold ${salePrice >= pricing.pv ? 'text-green-600' : salePrice >= pricing.pm ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {formatCurrency(salePrice)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {salePrice >= pricing.pv
+                    ? 'Acima do sugerido ✓'
+                    : salePrice >= pricing.pm
+                    ? 'Abaixo do sugerido ⚠'
+                    : 'Abaixo do mínimo ✗'}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-muted-foreground">-</p>
+                <p className="text-xs text-muted-foreground mt-1">Informe na ficha técnica</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Minimum Price Card */}
+      <Card className="border-yellow-500/20 bg-yellow-500/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-yellow-600" />
+            Preço Mínimo (Sobrevivência)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xl font-bold text-yellow-600">{formatCurrency(pricing.pm)}</p>
+          <p className="text-xs text-muted-foreground mt-1">Sem lucro nem investimento</p>
+        </CardContent>
+      </Card>
 
       {showDetailed && (
         <>

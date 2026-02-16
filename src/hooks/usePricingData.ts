@@ -28,6 +28,7 @@ export interface TechnicalSheet {
   packaging_cost: number;
   yield_kg: number;
   yield_portions: number;
+  sale_price: number;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -159,16 +160,29 @@ export function calculatePricing(
   const contribution_margin = pv - cvu - (pv * dv);
   const contribution_margin_pct = pv > 0 ? (contribution_margin / pv) * 100 : 0;
 
-  // Determina status
+  // Determina status baseado no preço de venda real informado pelo usuário
+  const salePrice = Number(sheet.sale_price) || 0;
   let status: PricingStatus = 'saudavel';
   
-  if (pv <= pm) {
-    status = 'inviavel';
-  } else if (
-    pv <= pm * globalConfig.price_proximity_factor ||
-    contribution_margin_pct < globalConfig.healthy_margin_threshold
-  ) {
-    status = 'atencao';
+  if (salePrice <= 0) {
+    // Se não informou preço de venda, usa o cálculo teórico
+    if (pv <= pm) {
+      status = 'inviavel';
+    } else if (
+      pv <= pm * globalConfig.price_proximity_factor ||
+      contribution_margin_pct < globalConfig.healthy_margin_threshold
+    ) {
+      status = 'atencao';
+    }
+  } else {
+    // Compara preço de venda real com os preços calculados
+    if (salePrice < pm) {
+      status = 'inviavel';
+    } else if (salePrice < pv) {
+      status = 'atencao';
+    } else {
+      status = 'saudavel';
+    }
   }
 
   // Custo e preço por KG e por porção

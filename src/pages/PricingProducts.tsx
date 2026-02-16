@@ -185,7 +185,8 @@ export default function PricingProducts() {
                     <TableHead className="text-center">Status</TableHead>
                     {isAdmin && (
                       <>
-                        <TableHead className="text-right">Preço Venda</TableHead>
+                        <TableHead className="text-right">Preço Sugerido</TableHead>
+                        <TableHead className="text-right">Preço de Venda</TableHead>
                         <TableHead className="text-center">Viabilidade</TableHead>
                       </>
                     )}
@@ -215,6 +216,16 @@ export default function PricingProducts() {
                               </span>
                             ) : (
                               <span className="text-muted-foreground text-sm">Sem ficha</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {product.technical_sheet && Number(product.technical_sheet.sale_price) > 0 ? (
+                              <span className="flex items-center justify-end gap-1">
+                                <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+                                {formatCurrency(Number(product.technical_sheet.sale_price))}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
