@@ -57,7 +57,6 @@ export function TechnicalSheetForm({
   const [notes, setNotes] = useState('');
   const [yieldKg, setYieldKg] = useState('0');
   const [yieldPortions, setYieldPortions] = useState('0');
-  const [salePrice, setSalePrice] = useState('0');
   const [ingredients, setIngredients] = useState<LocalIngredient[]>([]);
 
   const { stockItems } = useStockData();
@@ -74,7 +73,6 @@ export function TechnicalSheetForm({
       setPackagingCost(sheet.packaging_cost.toString());
       setYieldKg(sheet.yield_kg.toString());
       setYieldPortions(sheet.yield_portions.toString());
-      setSalePrice(sheet.sale_price.toString());
       setNotes(sheet.notes || '');
     } else {
       setManualCmv('0');
@@ -83,7 +81,6 @@ export function TechnicalSheetForm({
       setPackagingCost('0');
       setYieldKg('0');
       setYieldPortions('0');
-      setSalePrice('0');
       setNotes('');
     }
   }, [sheet]);
@@ -119,7 +116,6 @@ export function TechnicalSheetForm({
     const packNum = parseFloat(packagingCost) || 0;
     const yieldKgNum = parseFloat(yieldKg) || 0;
     const yieldPortionsNum = parseFloat(yieldPortions) || 0;
-    const salePriceNum = parseFloat(salePrice) || 0;
 
     return {
       id: sheet?.id || '',
@@ -130,13 +126,12 @@ export function TechnicalSheetForm({
       packaging_cost: packNum,
       yield_kg: yieldKgNum,
       yield_portions: yieldPortionsNum,
-      sale_price: salePriceNum,
       notes: notes,
       created_by: null,
       created_at: '',
       updated_at: '',
     };
-  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, yieldKg, yieldPortions, salePrice, notes, productId, sheet?.id]);
+  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, yieldKg, yieldPortions, notes, productId, sheet?.id]);
 
   const pricing = useMemo(() => {
     return calculatePricing(liveSheet, globalConfig, productConfig);
@@ -155,7 +150,6 @@ export function TechnicalSheetForm({
         packaging_cost: parseFloat(packagingCost) || 0,
         yield_kg: parseFloat(yieldKg) || 0,
         yield_portions: parseFloat(yieldPortions) || 0,
-        sale_price: parseFloat(salePrice) || 0,
         notes: notes || null,
       });
 
@@ -313,24 +307,6 @@ export function TechnicalSheetForm({
 
               <Separator />
 
-              <div className="space-y-2">
-                <Label htmlFor="salePrice">Preço de Venda Praticado (R$)</Label>
-                <Input
-                  id="salePrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={salePrice}
-                  onChange={(e) => setSalePrice(formatCurrencyInput(e.target.value))}
-                  placeholder="0.00"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Informe o preço de venda real para comparar com o preço sugerido
-                </p>
-              </div>
-
-              <Separator />
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="yieldKg">Rendimento (KG)</Label>
@@ -403,7 +379,7 @@ export function TechnicalSheetForm({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PricingResultCards pricing={pricing} salePrice={parseFloat(salePrice) || 0} showDetailed />
+            <PricingResultCards pricing={pricing} showDetailed />
           </CardContent>
         </Card>
       </div>

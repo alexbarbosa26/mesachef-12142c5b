@@ -233,9 +233,9 @@ export default function PricingReports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{formatCurrency(reportData.avgPV)}</div>
-                     <p className="text-xs text-muted-foreground">
-                       Preço sugerido médio
-                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      Preço de venda médio
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -378,7 +378,7 @@ export default function PricingReports() {
                             <TableHead>#</TableHead>
                             <TableHead>Produto</TableHead>
                             <TableHead className="text-right">Margem</TableHead>
-                            <TableHead className="text-right">P. Sugerido</TableHead>
+                            <TableHead className="text-right">PV</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
