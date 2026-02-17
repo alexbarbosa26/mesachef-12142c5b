@@ -3,6 +3,7 @@ import { CalculatedPricing } from '@/hooks/usePricingData';
 import { PricingStatusBadge } from './PricingStatusBadge';
 import { DollarSign, TrendingUp, PiggyBank, AlertCircle, Target, BarChart3, Scale, Slice } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DiscountSimulator } from './DiscountSimulator';
 
 interface PricingResultCardsProps {
   pricing: CalculatedPricing | undefined;
@@ -185,6 +186,11 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
             </div>
           )}
         </>
+      )}
+
+      {/* Discount Simulator */}
+      {pricing.cvu > 0 && (
+        <DiscountSimulator pricing={pricing} />
       )}
     </div>
   );
