@@ -21,6 +21,7 @@ import {
 } from '@/hooks/useTechnicalSheetIngredients';
 import { PricingResultCards } from './PricingResultCards';
 import { IngredientsList } from './IngredientsList';
+import { ProductConfigSection } from './ProductConfigSection';
 import { FileText, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -214,6 +215,14 @@ export function TechnicalSheetForm({
           onChange={setIngredients}
         />
       )}
+
+      {/* Configuração individual de percentuais */}
+      <ProductConfigSection
+        productId={productId}
+        productName={productName}
+        globalConfig={globalConfig}
+        productConfig={productConfig}
+      />
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Formulário de Custos */}
