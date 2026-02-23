@@ -2,6 +2,7 @@
  import { supabase } from '@/integrations/supabase/client';
  import { StockItem } from '@/hooks/useStockData';
  import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns';
+ import { calculateValueForQuantity } from '@/utils/stockValuation';
  
  export interface ValueTrendPoint {
    date: string;
@@ -50,11 +51,13 @@
      const startDate = startOfDay(subDays(today, days - 1));
      const dateRange = eachDayOfInterval({ start: startDate, end: today });
  
-     // Create item value map
-     const itemValueMap = new Map<string, number>();
-     stockItems.forEach(item => {
-       itemValueMap.set(item.id, item.value || 0);
-     });
+      // Create item value and unit maps
+      const itemValueMap = new Map<string, number>();
+      const itemUnitMap = new Map<string, string>();
+      stockItems.forEach(item => {
+        itemValueMap.set(item.id, item.value || 0);
+        itemUnitMap.set(item.id, item.unit || 'kg');
+      });
  
      // Create current quantity map (starting point)
      const currentQuantityMap = new Map<string, number>();
@@ -88,11 +91,12 @@
        const dateKey = format(date, 'yyyy-MM-dd');
        
        // Calculate total value for this day
-       let totalValue = 0;
-       quantitySnapshot.forEach((qty, itemId) => {
-         const unitValue = itemValueMap.get(itemId) || 0;
-         totalValue += qty * unitValue;
-       });
+        let totalValue = 0;
+        quantitySnapshot.forEach((qty, itemId) => {
+          const unitValue = itemValueMap.get(itemId) || 0;
+          const unit = itemUnitMap.get(itemId) || 'kg';
+          totalValue += calculateValueForQuantity(qty, unit, unitValue);
+        });
  
        result.unshift({
          date: dateKey,
