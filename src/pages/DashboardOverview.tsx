@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { calculateItemTotalValue } from '@/utils/stockValuation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useStockData } from '@/hooks/useStockData';
 import { useSettings } from '@/hooks/useSettings';
@@ -81,7 +82,7 @@ const DashboardOverview = () => {
     return categories.map((category) => {
       const items = stockItems.filter((item) => item.category_id === category.id);
       const totalValue = items.reduce((sum, item) => {
-        return sum + (item.value || 0) * item.current_quantity;
+        return sum + calculateItemTotalValue(item);
       }, 0);
       const totalQuantity = items.reduce((sum, item) => sum + item.current_quantity, 0);
       

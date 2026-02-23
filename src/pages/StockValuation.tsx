@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getExpiryStatus } from '@/components/ExpiryBadge';
+import { calculateItemTotalValue } from '@/utils/stockValuation';
 import {
   Table,
   TableBody,
@@ -32,7 +33,7 @@ const StockValuation = () => {
   const valuations = useMemo(() => {
     // Total value
     const totalValue = stockItems.reduce((sum, item) => {
-      return sum + (item.value || 0) * item.current_quantity;
+      return sum + calculateItemTotalValue(item);
     }, 0);
 
     // Value by status
@@ -44,7 +45,7 @@ const StockValuation = () => {
     let healthyValue = 0;
 
     stockItems.forEach((item) => {
-      const itemValue = (item.value || 0) * item.current_quantity;
+      const itemValue = calculateItemTotalValue(item);
       const { status } = getExpiryStatus(item.expiry_date, settings.expiry_alert_days);
       
       // Check expiry first
@@ -72,7 +73,7 @@ const StockValuation = () => {
     const byCategory = categories.map((category) => {
       const items = stockItems.filter((item) => item.category_id === category.id);
       const value = items.reduce((sum, item) => {
-        return sum + (item.value || 0) * item.current_quantity;
+        return sum + calculateItemTotalValue(item);
       }, 0);
       const itemCount = items.length;
       const totalQuantity = items.reduce((sum, item) => sum + item.current_quantity, 0);
@@ -316,8 +317,8 @@ const StockValuation = () => {
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">
               <strong>Nota:</strong> Os valores são calculados multiplicando o valor unitário
-              de cada item pela quantidade atual em estoque, independente da unidade de medida.
-              O valor total representa a soma de todos os itens cadastrados com valor definido.
+              pela quantidade convertida à unidade base (ex: gramas → kg, ml → litros).
+              Assim, 1.000g a R$ 38,00/kg resulta em R$ 38,00, não R$ 38.000.
             </p>
           </CardContent>
         </Card>
