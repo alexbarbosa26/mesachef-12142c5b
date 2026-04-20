@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3 } from 'lucide-react';
+import { ShoppingCart, TrendingDown } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -61,6 +62,16 @@ const Sidebar = () => {
     name: 'Valoração',
     href: '/stock-valuation',
     icon: DollarSign,
+    adminOnly: true
+  }, {
+    name: 'Compras',
+    href: '/stock-purchases',
+    icon: ShoppingCart,
+    adminOnly: true
+  }, {
+    name: 'CMV',
+    href: '/cmv',
+    icon: TrendingDown,
     adminOnly: true
   }, {
     name: 'Precificação',

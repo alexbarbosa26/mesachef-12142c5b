@@ -71,6 +71,60 @@ export type Database = {
         }
         Relationships: []
       }
+      cmv_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          difference_pct: number
+          difference_value: number
+          final_stock_value: number
+          id: string
+          initial_stock_value: number
+          notes: string | null
+          period_end: string
+          period_start: string
+          purchases_value: number
+          real_cmv: number
+          status: Database["public"]["Enums"]["cmv_status"]
+          theoretical_cmv: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          difference_pct?: number
+          difference_value?: number
+          final_stock_value?: number
+          id?: string
+          initial_stock_value?: number
+          notes?: string | null
+          period_end: string
+          period_start: string
+          purchases_value?: number
+          real_cmv?: number
+          status?: Database["public"]["Enums"]["cmv_status"]
+          theoretical_cmv?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          difference_pct?: number
+          difference_value?: number
+          final_stock_value?: number
+          id?: string
+          initial_stock_value?: number
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          purchases_value?: number
+          real_cmv?: number
+          status?: Database["public"]["Enums"]["cmv_status"]
+          theoretical_cmv?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       custom_columns: {
         Row: {
           column_type: string
@@ -286,6 +340,66 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_adjustments: {
+        Row: {
+          adjustment_type: Database["public"]["Enums"]["adjustment_type"]
+          created_at: string
+          created_by: string | null
+          difference: number
+          id: string
+          notes: string | null
+          physical_quantity: number
+          snapshot_id: string | null
+          stock_item_id: string
+          theoretical_quantity: number
+          updated_at: string
+          value_impact: number
+        }
+        Insert: {
+          adjustment_type?: Database["public"]["Enums"]["adjustment_type"]
+          created_at?: string
+          created_by?: string | null
+          difference?: number
+          id?: string
+          notes?: string | null
+          physical_quantity?: number
+          snapshot_id?: string | null
+          stock_item_id: string
+          theoretical_quantity?: number
+          updated_at?: string
+          value_impact?: number
+        }
+        Update: {
+          adjustment_type?: Database["public"]["Enums"]["adjustment_type"]
+          created_at?: string
+          created_by?: string | null
+          difference?: number
+          id?: string
+          notes?: string | null
+          physical_quantity?: number
+          snapshot_id?: string | null
+          stock_item_id?: string
+          theoretical_quantity?: number
+          updated_at?: string
+          value_impact?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_adjustments_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "cmv_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_adjustments_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_history: {
         Row: {
           change_type: string
@@ -376,6 +490,56 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_purchases: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          purchase_date: string
+          quantity: number
+          stock_item_id: string
+          supplier_name: string | null
+          total_cost: number
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          purchase_date?: string
+          quantity?: number
+          stock_item_id: string
+          supplier_name?: string | null
+          total_cost?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          purchase_date?: string
+          quantity?: number
+          stock_item_id?: string
+          supplier_name?: string | null
+          total_cost?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_purchases_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
             referencedColumns: ["id"]
           },
         ]
@@ -530,7 +694,9 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      adjustment_type: "perda" | "quebra" | "erro_operacional"
       app_role: "admin" | "staff"
+      cmv_status: "normal" | "alerta" | "critico"
       pricing_status: "saudavel" | "atencao" | "inviavel"
       product_category:
         | "cafe"
@@ -668,7 +834,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      adjustment_type: ["perda", "quebra", "erro_operacional"],
       app_role: ["admin", "staff"],
+      cmv_status: ["normal", "alerta", "critico"],
       pricing_status: ["saudavel", "atencao", "inviavel"],
       product_category: [
         "cafe",
