@@ -20,6 +20,8 @@ import PricingProducts from "./pages/PricingProducts";
 import TechnicalSheetPage from "./pages/TechnicalSheetPage";
 import PricingConfig from "./pages/PricingConfig";
 import PricingReports from "./pages/PricingReports";
+import StockPurchases from "./pages/StockPurchases";
+import CMVDashboard from "./pages/CMVDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/pricing/sheet/:productId" element={<TechnicalSheetPage />} />
             <Route path="/pricing/config" element={<PricingConfig />} />
             <Route path="/pricing/reports" element={<PricingReports />} />
+            <Route path="/stock-purchases" element={<StockPurchases />} />
+            <Route path="/cmv" element={<CMVDashboard />} />
             <Route path="/users" element={<Users />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/settings" element={<Settings />} />
