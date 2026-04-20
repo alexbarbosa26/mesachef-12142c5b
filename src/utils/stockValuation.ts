@@ -1,4 +1,9 @@
-import { StockItem } from '@/hooks/useStockData';
+
+interface StockValuationItem {
+  current_quantity: number;
+  unit: string;
+  value: number | null;
+}
 
 /**
  * Calcula o valor total de um item de estoque considerando a unidade de medida.
@@ -8,7 +13,7 @@ import { StockItem } from '@/hooks/useStockData';
  * 
  * Exemplo: 1000g de queijo a R$38/kg = R$38 (não R$38.000)
  */
-export function calculateItemTotalValue(item: StockItem): number {
+export function calculateItemTotalValue(item: StockValuationItem): number {
   if (!item.value || item.value <= 0) return 0;
   const normalizedQty = normalizeQuantityToBaseUnit(item.current_quantity, item.unit);
   return item.value * normalizedQty;
