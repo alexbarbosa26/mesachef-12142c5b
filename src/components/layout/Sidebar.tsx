@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3 } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,16 @@ const Sidebar = () => {
     name: 'CMV',
     href: '/cmv',
     icon: TrendingDown,
+    adminOnly: true
+  }, {
+    name: 'Snapshots CMV',
+    href: '/cmv/snapshots',
+    icon: Camera,
+    adminOnly: true
+  }, {
+    name: 'Ajustes de Estoque',
+    href: '/stock-adjustments',
+    icon: Wrench,
     adminOnly: true
   }, {
     name: 'Precificação',
