@@ -7,6 +7,27 @@ interface PasswordResetRequest {
   resetUrl: string;
 }
 
+const ALLOWED_RESET_ORIGINS = [
+  'https://mesachef.lovable.app',
+  'https://id-preview--ff07262f-c0bc-4f46-b9f9-f0b2860b311e.lovable.app',
+  'https://ff07262f-c0bc-4f46-b9f9-f0b2860b311e.lovableproject.com',
+];
+
+// In development, also allow localhost
+if (Deno.env.get('DENO_ENV') !== 'production') {
+  ALLOWED_RESET_ORIGINS.push('http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000');
+}
+
+function isAllowedResetUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ALLOWED_RESET_ORIGINS.some(origin => parsed.origin === origin) &&
+      parsed.pathname === '/reset-password';
+  } catch {
+    return false;
+  }
+}
+
 interface SmtpSettings {
   smtp_host: string;
   smtp_port: string;
@@ -131,6 +152,14 @@ const handler = async (req: Request): Promise<Response> => {
     if (!email) {
       return new Response(
         JSON.stringify({ success: false, error: 'Email é obrigatório' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Validate resetUrl against allowlist
+    if (!resetUrl || !isAllowedResetUrl(resetUrl)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'URL de redirecionamento inválida' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
