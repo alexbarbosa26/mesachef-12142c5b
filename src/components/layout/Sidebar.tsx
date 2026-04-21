@@ -121,11 +121,11 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto max-h-[calc(100vh-280px)] scrollbar-thin scrollbar-thumb-sidebar-border scrollbar-track-transparent">
         {filteredNavItems.map(item => {
         const isActive = location.pathname === item.href;
-        return <Link key={item.href} to={item.href} onClick={() => setIsMobileOpen(false)} className={cn('flex items-center gap-3 px-4 py-3 rounded-lg transition-base', isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground')}>
-              <item.icon className="w-5 h-5" />
+        return <Link key={item.href} to={item.href} onClick={() => setIsMobileOpen(false)} className={cn('flex items-center gap-3 px-4 py-2.5 rounded-lg transition-base text-sm', isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground')}>
+              <item.icon className="w-4 h-4" />
               <span className="font-medium">{item.name}</span>
             </Link>;
       })}
