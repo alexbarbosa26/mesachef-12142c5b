@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useStockData } from '@/hooks/useStockData';
 import { useSettings } from '@/hooks/useSettings';
@@ -44,73 +44,83 @@ const Sidebar = () => {
     const hasExpiryAlert = expiryStatus.status === 'expired' || expiryStatus.status === 'expiring';
     return isLowStock || hasExpiryAlert;
   }).length;
-  const navItems = [{
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-    adminOnly: false
-  }, {
-    name: 'Gestão de Estoque',
-    href: '/stock-management',
-    icon: ClipboardList,
-    adminOnly: true
-  }, {
-    name: 'Preenchimento',
-    href: '/stock-entry',
-    icon: Edit3,
-    adminOnly: false
-  }, {
-    name: 'Valoração',
-    href: '/stock-valuation',
-    icon: DollarSign,
-    adminOnly: true
-  }, {
-    name: 'Compras',
-    href: '/stock-purchases',
-    icon: ShoppingCart,
-    adminOnly: true
-  }, {
-    name: 'CMV',
-    href: '/cmv',
-    icon: TrendingDown,
-    adminOnly: true
-  }, {
-    name: 'Snapshots CMV',
-    href: '/cmv/snapshots',
-    icon: Camera,
-    adminOnly: true
-  }, {
-    name: 'Ajustes de Estoque',
-    href: '/stock-adjustments',
-    icon: Wrench,
-    adminOnly: true
-  }, {
-    name: 'Precificação',
-    href: '/pricing',
-    icon: Calculator,
-    adminOnly: false
-  }, {
-    name: 'Relatórios',
-    href: '/pricing/reports',
-    icon: BarChart3,
-    adminOnly: true
-  }, {
-    name: 'Usuários',
-    href: '/users',
-    icon: Users,
-    adminOnly: true
-  }, {
-    name: 'Log de Auditoria',
-    href: '/audit-log',
-    icon: FileText,
-    adminOnly: true
-  }, {
-    name: 'Configurações',
-    href: '/settings',
-    icon: Settings,
-    adminOnly: true
-  }];
-  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
+
+  type NavItem = { name: string; href: string; icon: any; adminOnly?: boolean };
+  type NavGroup = { name: string; icon: any; items: NavItem[] };
+
+  const standaloneItems: NavItem[] = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, adminOnly: false },
+  ];
+
+  const groups: NavGroup[] = [
+    {
+      name: 'Estoque',
+      icon: Package,
+      items: [
+        { name: 'Gestão de Estoque', href: '/stock-management', icon: ClipboardList, adminOnly: true },
+        { name: 'Preenchimento', href: '/stock-entry', icon: Edit3, adminOnly: false },
+        { name: 'Valoração', href: '/stock-valuation', icon: DollarSign, adminOnly: true },
+        { name: 'Compras', href: '/stock-purchases', icon: ShoppingCart, adminOnly: true },
+        { name: 'Ajustes de Estoque', href: '/stock-adjustments', icon: Wrench, adminOnly: true },
+      ],
+    },
+    {
+      name: 'CMV',
+      icon: TrendingDown,
+      items: [
+        { name: 'Dashboard CMV', href: '/cmv', icon: TrendingDown, adminOnly: true },
+        { name: 'Snapshots CMV', href: '/cmv/snapshots', icon: Camera, adminOnly: true },
+      ],
+    },
+    {
+      name: 'Precificação',
+      icon: Tag,
+      items: [
+        { name: 'Precificação', href: '/pricing', icon: Calculator, adminOnly: false },
+        { name: 'Relatórios', href: '/pricing/reports', icon: BarChart3, adminOnly: true },
+      ],
+    },
+    {
+      name: 'Administração',
+      icon: Shield,
+      items: [
+        { name: 'Usuários', href: '/users', icon: Users, adminOnly: true },
+        { name: 'Log de Auditoria', href: '/audit-log', icon: FileText, adminOnly: true },
+        { name: 'Configurações', href: '/settings', icon: Settings, adminOnly: true },
+      ],
+    },
+  ];
+
+  const filterItems = (items: NavItem[]) => items.filter(i => !i.adminOnly || isAdmin);
+  const filteredStandalone = filterItems(standaloneItems);
+  const filteredGroups = groups
+    .map(g => ({ ...g, items: filterItems(g.items) }))
+    .filter(g => g.items.length > 0);
+
+  // Auto-open the group that contains the active route
+  const getInitialOpenGroups = () => {
+    const open: Record<string, boolean> = {};
+    filteredGroups.forEach(g => {
+      open[g.name] = g.items.some(i => location.pathname === i.href || location.pathname.startsWith(i.href + '/'));
+    });
+    return open;
+  };
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(getInitialOpenGroups);
+  useEffect(() => {
+    setOpenGroups(prev => {
+      const next = { ...prev };
+      filteredGroups.forEach(g => {
+        if (g.items.some(i => location.pathname === i.href || location.pathname.startsWith(i.href + '/'))) {
+          next[g.name] = true;
+        }
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  const toggleGroup = (name: string) =>
+    setOpenGroups(prev => ({ ...prev, [name]: !prev[name] }));
   const NavContent = () => <>
       <div className="p-6">
         <div className="flex items-center gap-3">
@@ -124,13 +134,79 @@ const Sidebar = () => {
 
       <div className="flex-1 flex flex-col min-h-0">
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto scrollbar-thin scrollbar-thumb-sidebar-border scrollbar-track-transparent">
-          {filteredNavItems.map(item => {
-          const isActive = location.pathname === item.href;
-          return <Link key={item.href} to={item.href} onClick={() => setIsMobileOpen(false)} className={cn('flex items-center gap-2.5 px-3 py-2 rounded-md transition-base text-sm', isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground')}>
+          {filteredStandalone.map(item => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                onClick={() => setIsMobileOpen(false)}
+                className={cn(
+                  'flex items-center gap-2.5 px-3 py-2 rounded-md transition-base text-sm',
+                  isActive
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                )}
+              >
                 <item.icon className="w-4 h-4 shrink-0" />
                 <span className="font-medium truncate">{item.name}</span>
-              </Link>;
-        })}
+              </Link>
+            );
+          })}
+
+          {filteredGroups.map(group => {
+            const isOpen = !!openGroups[group.name];
+            const hasActiveChild = group.items.some(
+              i => location.pathname === i.href || location.pathname.startsWith(i.href + '/')
+            );
+            return (
+              <div key={group.name} className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.name)}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-3 py-2 rounded-md transition-base text-sm',
+                    hasActiveChild
+                      ? 'text-sidebar-foreground'
+                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  )}
+                  aria-expanded={isOpen}
+                >
+                  <group.icon className="w-4 h-4 shrink-0" />
+                  <span className="font-medium truncate flex-1 text-left">{group.name}</span>
+                  <ChevronDown
+                    className={cn(
+                      'w-4 h-4 shrink-0 transition-transform duration-200',
+                      isOpen ? 'rotate-180' : ''
+                    )}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="mt-0.5 ml-3 pl-3 border-l border-sidebar-border space-y-0.5">
+                    {group.items.map(item => {
+                      const isActive = location.pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          onClick={() => setIsMobileOpen(false)}
+                          className={cn(
+                            'flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-base text-sm',
+                            isActive
+                              ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                          )}
+                        >
+                          <item.icon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="font-medium truncate">{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
       </div>
 
