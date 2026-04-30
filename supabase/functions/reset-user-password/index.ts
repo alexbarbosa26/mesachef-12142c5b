@@ -49,14 +49,16 @@ serve(async (req) => {
       );
     }
 
-    // Check if requesting user is admin
-    const { data: roleData, error: roleError } = await userClient
+    // Check if requesting user is admin (user may have multiple roles)
+    const { data: rolesData, error: roleError } = await userClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", requestingUser.id)
-      .maybeSingle();
+      .eq("user_id", requestingUser.id);
 
-    if (roleError || roleData?.role !== "admin") {
+    const isAdmin = !roleError && Array.isArray(rolesData) && rolesData.some((r) => r.role === "admin");
+
+    if (!isAdmin) {
+      console.error("Permission denied for user", requestingUser.id, "roleError:", roleError?.message);
       return new Response(
         JSON.stringify({ error: "Apenas administradores podem redefinir senhas" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -94,8 +96,9 @@ serve(async (req) => {
     });
 
     if (updateError) {
+      console.error("Admin updateUserById failed:", updateError.message, updateError);
       return new Response(
-        JSON.stringify({ error: "Erro ao redefinir senha" }),
+        JSON.stringify({ error: `Erro ao redefinir senha: ${updateError.message}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -135,7 +138,8 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error("Error resetting password");
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error resetting password:", msg);
     return new Response(
       JSON.stringify({ error: "Erro interno. Tente novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
