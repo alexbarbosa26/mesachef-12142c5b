@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -25,10 +26,11 @@ interface UserProfile {
   user_id: string;
   full_name: string;
   email: string;
-  role: 'admin' | 'staff';
+  role: 'admin' | 'staff' | 'superadmin';
   is_active: boolean;
   password_expiry_days: number | null;
   created_at: string;
+  company_id?: string | null;
 }
 
 interface UserEditDialogProps {
@@ -47,13 +49,16 @@ const UserEditDialog = ({
   currentUserId,
 }: UserEditDialogProps) => {
   const { toast } = useToast();
+  const { isSuperadmin } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
   const [formData, setFormData] = useState({
     full_name: '',
-    role: 'staff' as 'admin' | 'staff',
+    role: 'staff' as 'admin' | 'staff' | 'superadmin',
     is_active: true,
     password_expiry_enabled: false,
     password_expiry_days: 45,
+    company_id: '' as string,
   });
 
   // Update form when user changes
@@ -65,9 +70,21 @@ const UserEditDialog = ({
         is_active: user.is_active,
         password_expiry_enabled: !!user.password_expiry_days,
         password_expiry_days: user.password_expiry_days || 45,
+        company_id: user.company_id ?? '',
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!isSuperadmin || !open) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('companies')
+        .select('id,name')
+        .order('name');
+      setCompanies(data || []);
+    })();
+  }, [isSuperadmin, open]);
 
   const isCurrentUser = user?.user_id === currentUserId;
 
@@ -79,16 +96,20 @@ const UserEditDialog = ({
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       
+      const body: Record<string, unknown> = {
+        user_id: user.user_id,
+        full_name: formData.full_name,
+        role: formData.role,
+        is_active: formData.is_active,
+        password_expiry_days: formData.password_expiry_enabled
+          ? formData.password_expiry_days
+          : null,
+      };
+      if (isSuperadmin) {
+        body.company_id = formData.company_id || null;
+      }
       const response = await supabase.functions.invoke('update-user', {
-        body: {
-          user_id: user.user_id,
-          full_name: formData.full_name,
-          role: formData.role as 'admin' | 'staff',
-          is_active: formData.is_active,
-          password_expiry_days: formData.password_expiry_enabled
-            ? formData.password_expiry_days
-            : null,
-        },
+        body,
       });
 
       if (response.error) {
@@ -151,7 +172,7 @@ const UserEditDialog = ({
             <Label>Tipo de Usuário</Label>
             <Select
               value={formData.role}
-              onValueChange={(v: 'admin' | 'staff') =>
+              onValueChange={(v: 'admin' | 'staff' | 'superadmin') =>
                 setFormData({ ...formData, role: v })
               }
               disabled={isCurrentUser}
@@ -172,6 +193,14 @@ const UserEditDialog = ({
                     Administrador
                   </div>
                 </SelectItem>
+                {isSuperadmin && (
+                  <SelectItem value="superadmin">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Super Admin
+                    </div>
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
             {isCurrentUser && (
@@ -180,6 +209,28 @@ const UserEditDialog = ({
               </p>
             )}
           </div>
+
+          {isSuperadmin && (
+            <div className="space-y-2">
+              <Label>Empresa</Label>
+              <Select
+                value={formData.company_id || '__none__'}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, company_id: v === '__none__' ? '' : v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem empresa (superadmin global)</SelectItem>
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Status (Active/Inactive) */}
           <div className="flex items-center justify-between p-4 border rounded-lg">

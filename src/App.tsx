@@ -25,6 +25,7 @@ import StockPurchases from "./pages/StockPurchases";
 import CMVDashboard from "./pages/CMVDashboard";
 import CMVSnapshots from "./pages/CMVSnapshots";
 import StockAdjustments from "./pages/StockAdjustments";
+import Companies from "./pages/Companies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/cmv/snapshots" element={<CMVSnapshots />} />
             <Route path="/stock-adjustments" element={<StockAdjustments />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/companies" element={<Companies />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
