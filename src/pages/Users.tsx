@@ -130,8 +130,6 @@ const Users = () => {
         .order('name');
       setCompanies(cmps || []);
     } catch (error) {
-  const companyName = (id?: string | null) => companies.find((c) => c.id === id)?.name || '-';
-
       console.error('Error fetching users:', error);
       toast({
         title: 'Erro',
@@ -142,6 +140,8 @@ const Users = () => {
       setLoading(false);
     }
   };
+
+  const companyName = (id?: string | null) => companies.find((c) => c.id === id)?.name || '-';
 
   const handleCreateUser = async () => {
     setErrors({});
