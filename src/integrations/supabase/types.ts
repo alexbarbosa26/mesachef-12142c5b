@@ -49,6 +49,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -56,6 +57,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -63,16 +65,26 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cmv_snapshots: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           difference_pct: number
@@ -90,6 +102,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           difference_pct?: number
@@ -107,6 +120,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           difference_pct?: number
@@ -121,6 +135,41 @@ export type Database = {
           real_cmv?: number
           status?: Database["public"]["Enums"]["cmv_status"]
           theoretical_cmv?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmv_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          created_at: string
+          document: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
           updated_at?: string
         }
         Relationships: []
@@ -208,6 +257,7 @@ export type Database = {
       }
       pricing_config_product: {
         Row: {
+          company_id: string | null
           fixed_expenses_pct: number | null
           id: string
           investment_pct: number | null
@@ -218,6 +268,7 @@ export type Database = {
           variable_expenses_pct: number | null
         }
         Insert: {
+          company_id?: string | null
           fixed_expenses_pct?: number | null
           id?: string
           investment_pct?: number | null
@@ -228,6 +279,7 @@ export type Database = {
           variable_expenses_pct?: number | null
         }
         Update: {
+          company_id?: string | null
           fixed_expenses_pct?: number | null
           id?: string
           investment_pct?: number | null
@@ -238,6 +290,13 @@ export type Database = {
           variable_expenses_pct?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pricing_config_product_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pricing_config_product_product_id_fkey"
             columns: ["product_id"]
@@ -250,6 +309,7 @@ export type Database = {
       pricing_products: {
         Row: {
           category: Database["public"]["Enums"]["product_category"]
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -260,6 +320,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["product_category"]
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -270,6 +331,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["product_category"]
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -278,10 +340,19 @@ export type Database = {
           sale_unit?: Database["public"]["Enums"]["sale_unit"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pricing_products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
+          company_id: string | null
           created_at: string
           email: string
           full_name: string
@@ -294,6 +365,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -306,6 +378,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -317,7 +390,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
@@ -343,6 +424,7 @@ export type Database = {
       stock_adjustments: {
         Row: {
           adjustment_type: Database["public"]["Enums"]["adjustment_type"]
+          company_id: string | null
           created_at: string
           created_by: string | null
           difference: number
@@ -357,6 +439,7 @@ export type Database = {
         }
         Insert: {
           adjustment_type?: Database["public"]["Enums"]["adjustment_type"]
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           difference?: number
@@ -371,6 +454,7 @@ export type Database = {
         }
         Update: {
           adjustment_type?: Database["public"]["Enums"]["adjustment_type"]
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           difference?: number
@@ -384,6 +468,13 @@ export type Database = {
           value_impact?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_adjustments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_adjustments_snapshot_id_fkey"
             columns: ["snapshot_id"]
@@ -404,6 +495,7 @@ export type Database = {
         Row: {
           change_type: string
           changed_by: string | null
+          company_id: string | null
           created_at: string
           id: string
           item_id: string
@@ -413,6 +505,7 @@ export type Database = {
         Insert: {
           change_type?: string
           changed_by?: string | null
+          company_id?: string | null
           created_at?: string
           id?: string
           item_id: string
@@ -422,6 +515,7 @@ export type Database = {
         Update: {
           change_type?: string
           changed_by?: string | null
+          company_id?: string | null
           created_at?: string
           id?: string
           item_id?: string
@@ -429,6 +523,13 @@ export type Database = {
           previous_quantity?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_history_item_id_fkey"
             columns: ["item_id"]
@@ -441,6 +542,7 @@ export type Database = {
       stock_items: {
         Row: {
           category_id: string
+          company_id: string | null
           count_date: string | null
           created_at: string
           current_quantity: number
@@ -456,6 +558,7 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          company_id?: string | null
           count_date?: string | null
           created_at?: string
           current_quantity?: number
@@ -471,6 +574,7 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          company_id?: string | null
           count_date?: string | null
           created_at?: string
           current_quantity?: number
@@ -492,10 +596,18 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       stock_purchases: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -509,6 +621,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -522,6 +635,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -536,6 +650,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "stock_purchases_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_purchases_stock_item_id_fkey"
             columns: ["stock_item_id"]
             isOneToOne: false
@@ -547,6 +668,7 @@ export type Database = {
       technical_sheet_ingredients: {
         Row: {
           calculated_cost: number
+          company_id: string | null
           created_at: string
           id: string
           quantity: number
@@ -557,6 +679,7 @@ export type Database = {
         }
         Insert: {
           calculated_cost?: number
+          company_id?: string | null
           created_at?: string
           id?: string
           quantity?: number
@@ -567,6 +690,7 @@ export type Database = {
         }
         Update: {
           calculated_cost?: number
+          company_id?: string | null
           created_at?: string
           id?: string
           quantity?: number
@@ -576,6 +700,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "technical_sheet_ingredients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "technical_sheet_ingredients_stock_item_id_fkey"
             columns: ["stock_item_id"]
@@ -595,6 +726,7 @@ export type Database = {
       technical_sheets: {
         Row: {
           cmv: number
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -610,6 +742,7 @@ export type Database = {
         }
         Insert: {
           cmv?: number
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -625,6 +758,7 @@ export type Database = {
         }
         Update: {
           cmv?: number
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -639,6 +773,13 @@ export type Database = {
           yield_portions?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "technical_sheets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "technical_sheets_product_id_fkey"
             columns: ["product_id"]
@@ -684,6 +825,7 @@ export type Database = {
         }
         Returns: string
       }
+      current_company_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -692,10 +834,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_superadmin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       adjustment_type: "perda" | "quebra" | "erro_operacional"
-      app_role: "admin" | "staff"
+      app_role: "admin" | "staff" | "superadmin"
       cmv_status: "normal" | "alerta" | "critico"
       pricing_status: "saudavel" | "atencao" | "inviavel"
       product_category:
@@ -835,7 +978,7 @@ export const Constants = {
   public: {
     Enums: {
       adjustment_type: ["perda", "quebra", "erro_operacional"],
-      app_role: ["admin", "staff"],
+      app_role: ["admin", "staff", "superadmin"],
       cmv_status: ["normal", "alerta", "critico"],
       pricing_status: ["saudavel", "atencao", "inviavel"],
       product_category: [
