@@ -42,10 +42,12 @@ interface UserProfile {
   user_id: string;
   full_name: string;
   email: string;
-  role: 'admin' | 'staff';
+  role: 'admin' | 'staff' | 'superadmin';
   is_active: boolean;
   password_expiry_days: number | null;
   created_at: string;
+  company_id?: string | null;
+  company_name?: string | null;
 }
 
 const signupSchema = z.object({
@@ -56,11 +58,12 @@ const signupSchema = z.object({
 });
 
 const Users = () => {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isSuperadmin, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -110,15 +113,25 @@ const Users = () => {
           user_id: profile.user_id,
           full_name: profile.full_name,
           email: profile.email,
-          role: (userRole?.role as 'admin' | 'staff') || 'staff',
+          role: (userRole?.role as 'admin' | 'staff' | 'superadmin') || 'staff',
           is_active: profile.is_active ?? true,
           password_expiry_days: profile.password_expiry_days,
           created_at: profile.created_at,
+          company_id: (profile as any).company_id ?? null,
         };
       });
 
       setUsers(usersWithRoles);
+
+      // Fetch companies (only useful for superadmin display)
+      const { data: cmps } = await (supabase as any)
+        .from('companies')
+        .select('id,name')
+        .order('name');
+      setCompanies(cmps || []);
     } catch (error) {
+  const companyName = (id?: string | null) => companies.find((c) => c.id === id)?.name || '-';
+
       console.error('Error fetching users:', error);
       toast({
         title: 'Erro',
@@ -417,6 +430,7 @@ const Users = () => {
                     <TableHead className="font-semibold">Nome</TableHead>
                     <TableHead className="font-semibold">Email</TableHead>
                     <TableHead className="font-semibold">Tipo</TableHead>
+                    {isSuperadmin && <TableHead className="font-semibold">Empresa</TableHead>}
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Cadastrado em</TableHead>
                     <TableHead className="font-semibold text-right">Ações</TableHead>
@@ -447,6 +461,10 @@ const Users = () => {
                             <>
                               <Shield className="w-3 h-3 mr-1" /> Admin
                             </>
+                          ) : userItem.role === 'superadmin' ? (
+                            <>
+                              <Shield className="w-3 h-3 mr-1" /> Super
+                            </>
                           ) : (
                             <>
                               <User className="w-3 h-3 mr-1" /> Staff
@@ -454,6 +472,11 @@ const Users = () => {
                           )}
                         </Badge>
                       </TableCell>
+                      {isSuperadmin && (
+                        <TableCell className="text-muted-foreground">
+                          {companyName(userItem.company_id)}
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Badge
                           variant={userItem.is_active ? 'default' : 'destructive'}
