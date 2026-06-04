@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type UserRole = 'admin' | 'staff' | null;
+type UserRole = 'admin' | 'staff' | 'superadmin' | null;
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
+  isSuperadmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,20 +23,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserRole = async (userId: string): Promise<UserRole> => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .eq('user_id', userId);
 
       if (error) {
         console.error('Error fetching user role:', error);
         return null;
       }
-
-      return data?.role as UserRole;
+      const roles = (data ?? []).map((r: { role: string }) => r.role);
+      if (roles.includes('superadmin')) return 'superadmin';
+      if (roles.includes('admin')) return 'admin';
+      if (roles.includes('staff')) return 'staff';
+      return null;
     } catch (error) {
       console.error('Error fetching user role:', error);
       return null;
@@ -101,7 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         signIn,
         signOut,
-        isAdmin: userRole === 'admin',
+        isAdmin: userRole === 'admin' || userRole === 'superadmin',
+        isSuperadmin: userRole === 'superadmin',
       }}
     >
       {children}

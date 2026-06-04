@@ -12,8 +12,8 @@ const isValidName = (name: string): boolean => {
   return name.trim().length >= 1 && name.trim().length <= 100;
 };
 
-const isValidRole = (role: string): role is "admin" | "staff" => {
-  return role === "admin" || role === "staff";
+const isValidRole = (role: string): role is "admin" | "staff" | "superadmin" => {
+  return role === "admin" || role === "staff" || role === "superadmin";
 };
 
 const isValidExpiryDays = (days: number | null): boolean => {
@@ -38,9 +38,10 @@ const getSafeErrorMessage = (error: unknown): string => {
 interface UpdateUserRequest {
   user_id: string;
   full_name?: string;
-  role?: "admin" | "staff";
+  role?: "admin" | "staff" | "superadmin";
   is_active?: boolean;
   password_expiry_days?: number | null;
+  company_id?: string | null;
 }
 
 serve(async (req) => {
@@ -75,14 +76,17 @@ serve(async (req) => {
       );
     }
 
-    // Check if requesting user is admin
-    const { data: roleData, error: roleError } = await userClient
+    // Check if requesting user is admin or superadmin
+    const { data: rolesData, error: roleError } = await userClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", requestingUser.id)
-      .maybeSingle();
+      .eq("user_id", requestingUser.id);
 
-    if (roleError || roleData?.role !== "admin") {
+    const reqRoles = (rolesData ?? []).map((r: { role: string }) => r.role);
+    const reqIsAdmin = reqRoles.includes("admin");
+    const reqIsSuperadmin = reqRoles.includes("superadmin");
+
+    if (roleError || (!reqIsAdmin && !reqIsSuperadmin)) {
       return new Response(
         JSON.stringify({ error: "Apenas administradores podem atualizar usuários" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -90,7 +94,21 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { user_id, full_name, role, is_active, password_expiry_days } = body as UpdateUserRequest;
+    const { user_id, full_name, role, is_active, password_expiry_days, company_id } = body as UpdateUserRequest;
+
+    // Only superadmin can change company_id or set role=superadmin
+    if (company_id !== undefined && !reqIsSuperadmin) {
+      return new Response(
+        JSON.stringify({ error: "Apenas superadmin pode alterar empresa do usuário" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (role === "superadmin" && !reqIsSuperadmin) {
+      return new Response(
+        JSON.stringify({ error: "Apenas superadmin pode atribuir papel superadmin" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Comprehensive input validation
     const validationErrors: string[] = [];
@@ -133,6 +151,7 @@ serve(async (req) => {
     const profileUpdates: Record<string, unknown> = {};
     if (full_name !== undefined) profileUpdates.full_name = full_name.trim();
     if (is_active !== undefined) profileUpdates.is_active = is_active;
+    if (company_id !== undefined) profileUpdates.company_id = company_id;
     if (password_expiry_days !== undefined) {
       profileUpdates.password_expiry_days = password_expiry_days;
       if (password_expiry_days) {

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2 } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,8 @@ const Sidebar = () => {
     user,
     userRole,
     signOut,
-    isAdmin
+    isAdmin,
+    isSuperadmin,
   } = useAuth();
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -45,7 +46,7 @@ const Sidebar = () => {
     return isLowStock || hasExpiryAlert;
   }).length;
 
-  type NavItem = { name: string; href: string; icon: any; adminOnly?: boolean };
+  type NavItem = { name: string; href: string; icon: any; adminOnly?: boolean; superadminOnly?: boolean };
   type NavGroup = { name: string; icon: any; items: NavItem[] };
 
   const standaloneItems: NavItem[] = [
@@ -84,6 +85,7 @@ const Sidebar = () => {
       name: 'Administração',
       icon: Shield,
       items: [
+        { name: 'Empresas', href: '/companies', icon: Building2, superadminOnly: true },
         { name: 'Usuários', href: '/users', icon: Users, adminOnly: true },
         { name: 'Log de Auditoria', href: '/audit-log', icon: FileText, adminOnly: true },
         { name: 'Configurações', href: '/settings', icon: Settings, adminOnly: true },
@@ -91,7 +93,11 @@ const Sidebar = () => {
     },
   ];
 
-  const filterItems = (items: NavItem[]) => items.filter(i => !i.adminOnly || isAdmin);
+  const filterItems = (items: NavItem[]) => items.filter(i => {
+    if (i.superadminOnly && !isSuperadmin) return false;
+    if (i.adminOnly && !isAdmin) return false;
+    return true;
+  });
   const filteredStandalone = filterItems(standaloneItems);
   const filteredGroups = groups
     .map(g => ({ ...g, items: filterItems(g.items) }))

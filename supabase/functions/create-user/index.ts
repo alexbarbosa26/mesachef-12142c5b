@@ -16,8 +16,8 @@ const isValidName = (name: string): boolean => {
   return name.trim().length >= 1 && name.trim().length <= 100;
 };
 
-const isValidRole = (role: string): role is "admin" | "staff" => {
-  return role === "admin" || role === "staff";
+const isValidRole = (role: string): role is "admin" | "staff" | "superadmin" => {
+  return role === "admin" || role === "staff" || role === "superadmin";
 };
 
 // Safe error messages - never expose internal details
@@ -41,7 +41,8 @@ interface CreateUserRequest {
   email: string;
   password: string;
   full_name: string;
-  role: "admin" | "staff";
+  role: "admin" | "staff" | "superadmin";
+  company_id?: string | null;
 }
 
 serve(async (req) => {
@@ -76,22 +77,34 @@ serve(async (req) => {
       );
     }
 
-    // Check if requesting user is admin
-    const { data: roleData, error: roleError } = await userClient
+    // Check if requesting user is admin or superadmin
+    const { data: rolesData, error: roleError } = await userClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", requestingUser.id)
-      .maybeSingle();
+      .eq("user_id", requestingUser.id);
 
-    if (roleError || roleData?.role !== "admin") {
+    const roles = (rolesData ?? []).map((r: { role: string }) => r.role);
+    const isAdmin = roles.includes("admin");
+    const isSuperadmin = roles.includes("superadmin");
+
+    if (roleError || (!isAdmin && !isSuperadmin)) {
       return new Response(
         JSON.stringify({ error: "Apenas administradores podem criar usuários" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Only superadmin can create superadmins
+    const { role: requestedRole } = (await req.clone().json()) as CreateUserRequest;
+    if (requestedRole === "superadmin" && !isSuperadmin) {
+      return new Response(
+        JSON.stringify({ error: "Apenas superadmin pode criar superadmin" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body = await req.json();
-    const { email, password, full_name, role } = body as CreateUserRequest;
+    const { email, password, full_name, role, company_id } = body as CreateUserRequest;
 
     // Comprehensive input validation
     const validationErrors: string[] = [];
@@ -146,6 +159,28 @@ serve(async (req) => {
 
     if (roleInsertError) {
       console.error("Error adding role");
+    }
+
+    // Assign company_id on profile.
+    // - superadmin pode escolher empresa (ou null para superadmin global)
+    // - admin comum: vincula o novo usuário à sua própria empresa
+    let targetCompanyId: string | null = null;
+    if (isSuperadmin) {
+      targetCompanyId = company_id ?? null;
+    } else {
+      const { data: meProfile } = await adminClient
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", requestingUser.id)
+        .maybeSingle();
+      targetCompanyId = (meProfile as { company_id: string | null } | null)?.company_id ?? null;
+    }
+
+    if (targetCompanyId) {
+      await adminClient
+        .from("profiles")
+        .update({ company_id: targetCompanyId })
+        .eq("user_id", newUser.user.id);
     }
 
     return new Response(
