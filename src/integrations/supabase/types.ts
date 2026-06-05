@@ -17,6 +17,7 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
+          company_id: string | null
           created_at: string
           details: Json | null
           entity_id: string | null
@@ -27,6 +28,7 @@ export type Database = {
         }
         Insert: {
           action: string
+          company_id?: string | null
           created_at?: string
           details?: Json | null
           entity_id?: string | null
@@ -37,6 +39,7 @@ export type Database = {
         }
         Update: {
           action?: string
+          company_id?: string | null
           created_at?: string
           details?: Json | null
           entity_id?: string | null
@@ -835,6 +838,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      is_user_active: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       adjustment_type: "perda" | "quebra" | "erro_operacional"
