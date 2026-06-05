@@ -90,6 +90,21 @@ serve(async (req) => {
       },
     });
 
+    // Cross-company isolation: verify target user belongs to caller's company
+    const isSuperadmin = rolesData?.some((r) => r.role === "superadmin");
+    if (!isSuperadmin) {
+      const { data: callerProfile } = await adminClient
+        .from("profiles").select("company_id").eq("user_id", requestingUser.id).maybeSingle();
+      const { data: targetProfile } = await adminClient
+        .from("profiles").select("company_id").eq("user_id", user_id).maybeSingle();
+      if (!callerProfile || !targetProfile || callerProfile.company_id !== targetProfile.company_id) {
+        return new Response(
+          JSON.stringify({ error: "Não autorizado para este usuário" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Reset the user's password using Admin API
     const { error: updateError } = await adminClient.auth.admin.updateUserById(user_id, {
       password: new_password,
