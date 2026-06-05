@@ -147,6 +147,20 @@ serve(async (req) => {
       },
     });
 
+    // Cross-company isolation: non-superadmin can only modify users in their own company
+    if (!reqIsSuperadmin) {
+      const { data: callerProfile } = await adminClient
+        .from("profiles").select("company_id").eq("user_id", requestingUser.id).maybeSingle();
+      const { data: targetProfile } = await adminClient
+        .from("profiles").select("company_id").eq("user_id", user_id).maybeSingle();
+      if (!callerProfile || !targetProfile || callerProfile.company_id !== targetProfile.company_id) {
+        return new Response(
+          JSON.stringify({ error: "Não autorizado para este usuário" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Update profile
     const profileUpdates: Record<string, unknown> = {};
     if (full_name !== undefined) profileUpdates.full_name = full_name.trim();
