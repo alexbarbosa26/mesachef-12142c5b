@@ -147,6 +147,8 @@ const StockAdjustments = () => {
                         <Label>Qtd. Física (contagem)</Label>
                         <Input
                           type="number"
+                          step="0.001"
+                          min="0"
                           value={physicalQty}
                           onChange={(e) => setPhysicalQty(e.target.value)}
                           placeholder="Quantidade real"
