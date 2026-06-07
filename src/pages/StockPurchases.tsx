@@ -147,26 +147,26 @@ const StockPurchases = () => {
                     <Label>Quantidade *{selectedItem ? ` (${selectedItem.unit})` : ''}</Label>
                     <Input
                       type="number"
-                      step="0.01"
-                      min="0.01"
+                      step="0.001"
+                      min="0.001"
                       value={formData.quantity}
                       onChange={(e) =>
                         setFormData({ ...formData, quantity: e.target.value })
                       }
-                      placeholder="0,00"
+                      placeholder="0,000"
                     />
                   </div>
                   <div>
                     <Label>Custo Unitário (R$) *</Label>
                     <Input
                       type="number"
-                      step="0.01"
-                      min="0.01"
+                      step="0.001"
+                      min="0.001"
                       value={formData.unit_cost}
                       onChange={(e) =>
                         setFormData({ ...formData, unit_cost: e.target.value })
                       }
-                      placeholder="0,00"
+                      placeholder="0,000"
                     />
                   </div>
                 </div>
