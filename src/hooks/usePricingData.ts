@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 export type ProductCategory = 'cafe' | 'doce' | 'bolo' | 'combo' | 'salgado' | 'bebida' | 'outro';
 export type SaleUnit = 'unidade' | 'fatia' | 'copo' | 'porcao' | 'kg' | 'litro';
 export type PricingStatus = 'saudavel' | 'atencao' | 'inviavel';
+export type PricingBasis = 'unit' | 'kg' | 'portion';
 
 export interface PricingProduct {
   id: string;
@@ -29,6 +30,7 @@ export interface TechnicalSheet {
   yield_kg: number;
   yield_portions: number;
   sale_price: number;
+  pricing_basis?: PricingBasis;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -69,6 +71,11 @@ export interface CalculatedPricing {
   pv: number;
   pm: number;
   sale_price: number;
+  pricing_basis: PricingBasis;
+  reference_suggested_price: number;
+  reference_min_price: number;
+  reference_cost: number;
+  cmv_pct: number;
   profit_per_unit: number;
   investment_per_unit: number;
   contribution_margin: number;
