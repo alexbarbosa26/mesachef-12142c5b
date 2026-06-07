@@ -737,6 +737,7 @@ export type Database = {
           notes: string | null
           packaging_cost: number
           prep_time_minutes: number
+          pricing_basis: string
           product_id: string
           sale_price: number
           updated_at: string
@@ -753,6 +754,7 @@ export type Database = {
           notes?: string | null
           packaging_cost?: number
           prep_time_minutes?: number
+          pricing_basis?: string
           product_id: string
           sale_price?: number
           updated_at?: string
@@ -769,6 +771,7 @@ export type Database = {
           notes?: string | null
           packaging_cost?: number
           prep_time_minutes?: number
+          pricing_basis?: string
           product_id?: string
           sale_price?: number
           updated_at?: string
