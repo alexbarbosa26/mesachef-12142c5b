@@ -10,6 +10,7 @@ import {
   TechnicalSheet,
   PricingConfigGlobal,
   PricingConfigProduct,
+  PricingBasis,
   useUpsertTechnicalSheet,
   calculatePricing,
 } from '@/hooks/usePricingData';
@@ -24,6 +25,7 @@ import { IngredientsList } from './IngredientsList';
 import { ProductConfigSection } from './ProductConfigSection';
 import { FileText, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface LocalIngredient {
   id: string;
@@ -59,6 +61,7 @@ export function TechnicalSheetForm({
   const [salePrice, setSalePrice] = useState('0');
   const [yieldKg, setYieldKg] = useState('0');
   const [yieldPortions, setYieldPortions] = useState('0');
+  const [pricingBasis, setPricingBasis] = useState<PricingBasis>('unit');
   const [ingredients, setIngredients] = useState<LocalIngredient[]>([]);
 
   const { stockItems } = useStockData();
@@ -76,6 +79,7 @@ export function TechnicalSheetForm({
       setYieldKg(sheet.yield_kg.toString());
       setYieldPortions(sheet.yield_portions.toString());
       setSalePrice(sheet.sale_price?.toString() || '0');
+      setPricingBasis(sheet.pricing_basis ?? 'unit');
       setNotes(sheet.notes || '');
     } else {
       setManualCmv('0');
@@ -85,6 +89,7 @@ export function TechnicalSheetForm({
       setYieldKg('0');
       setYieldPortions('0');
       setSalePrice('0');
+      setPricingBasis('unit');
       setNotes('');
     }
   }, [sheet]);
@@ -132,12 +137,13 @@ export function TechnicalSheetForm({
       yield_kg: yieldKgNum,
       yield_portions: yieldPortionsNum,
       sale_price: salePriceNum,
+      pricing_basis: pricingBasis,
       notes: notes,
       created_by: null,
       created_at: '',
       updated_at: '',
     };
-  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, yieldKg, yieldPortions, salePrice, notes, productId, sheet?.id]);
+  }, [calculatedCmv, laborCostPerHour, prepTimeMinutes, packagingCost, yieldKg, yieldPortions, salePrice, pricingBasis, notes, productId, sheet?.id]);
 
   const pricing = useMemo(() => {
     return calculatePricing(liveSheet, globalConfig, productConfig);
@@ -157,6 +163,7 @@ export function TechnicalSheetForm({
         yield_kg: parseFloat(yieldKg) || 0,
         yield_portions: parseFloat(yieldPortions) || 0,
         sale_price: parseFloat(salePrice) || 0,
+        pricing_basis: pricingBasis,
         notes: notes || null,
       });
 
@@ -328,11 +335,11 @@ export function TechnicalSheetForm({
                   <Input
                     id="yieldKg"
                     type="number"
-                    step="0.01"
+                    step="0.001"
                     min="0"
                     value={yieldKg}
                     onChange={(e) => setYieldKg(formatCurrencyInput(e.target.value))}
-                    placeholder="0.00"
+                    placeholder="0.000"
                   />
                 </div>
 
@@ -356,7 +363,34 @@ export function TechnicalSheetForm({
               <Separator />
 
               <div className="space-y-2">
-                <Label htmlFor="salePrice">Preço de Venda Praticado (R$)</Label>
+                <Label>Base do Preço Praticado</Label>
+                <RadioGroup
+                  value={pricingBasis}
+                  onValueChange={(v) => setPricingBasis(v as PricingBasis)}
+                  className="grid grid-cols-3 gap-2"
+                >
+                  <label className="flex items-center gap-2 border rounded-md p-2 cursor-pointer">
+                    <RadioGroupItem value="unit" id="basis-unit" />
+                    <span className="text-sm">Por Unidade</span>
+                  </label>
+                  <label className="flex items-center gap-2 border rounded-md p-2 cursor-pointer">
+                    <RadioGroupItem value="kg" id="basis-kg" />
+                    <span className="text-sm">Por Kg</span>
+                  </label>
+                  <label className="flex items-center gap-2 border rounded-md p-2 cursor-pointer">
+                    <RadioGroupItem value="portion" id="basis-portion" />
+                    <span className="text-sm">Por Porção</span>
+                  </label>
+                </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  Escolha a base de comparação: por unidade, por kg ou por porção.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="salePrice">
+                  Preço de Venda Praticado (R$){pricingBasis === 'kg' ? ' / Kg' : pricingBasis === 'portion' ? ' / Porção' : ''}
+                </Label>
                 <Input
                   id="salePrice"
                   type="number"
@@ -367,7 +401,7 @@ export function TechnicalSheetForm({
                   placeholder="0.00"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Informe o preço real que você cobra. Será comparado com o preço sugerido para definir a viabilidade.
+                  Informe o preço real cobrado na base selecionada. Será comparado com o preço sugerido correspondente.
                 </p>
               </div>
 

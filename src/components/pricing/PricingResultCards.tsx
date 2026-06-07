@@ -84,16 +84,41 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               Preço de Venda Praticado
+              {pricing.pricing_basis === 'kg' && ' (por Kg)'}
+              {pricing.pricing_basis === 'portion' && ' (por Porção)'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className={`text-2xl font-bold ${pricing.status === 'saudavel' ? 'text-green-600' : pricing.status === 'atencao' ? 'text-yellow-600' : 'text-red-600'}`}>
               {formatCurrency(pricing.sale_price)}
             </p>
+            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+              <p>Sugerido: {formatCurrency(pricing.reference_suggested_price)} · Mínimo: {formatCurrency(pricing.reference_min_price)}</p>
+              <p>
+                {pricing.status === 'saudavel' && 'Acima do preço sugerido ✓'}
+                {pricing.status === 'atencao' && 'Abaixo do sugerido, acima do mínimo ⚠'}
+                {pricing.status === 'inviavel' && 'Abaixo do preço mínimo ✗'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CMV % Card */}
+      {pricing.sale_price > 0 && (
+        <Card className={pricing.cmv_pct > 40 ? 'border-red-500/30' : pricing.cmv_pct > 30 ? 'border-yellow-500/30' : 'border-green-500/30'}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              CMV % (Custo / Preço Praticado)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-2xl font-bold ${pricing.cmv_pct > 40 ? 'text-red-600' : pricing.cmv_pct > 30 ? 'text-yellow-600' : 'text-green-600'}`}>
+              {formatPercent(pricing.cmv_pct)}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {pricing.status === 'saudavel' && 'Acima do preço sugerido ✓'}
-              {pricing.status === 'atencao' && 'Abaixo do sugerido, acima do mínimo ⚠'}
-              {pricing.status === 'inviavel' && 'Abaixo do preço mínimo ✗'}
+              Custo {formatCurrency(pricing.reference_cost)} ÷ Preço {formatCurrency(pricing.sale_price)}
             </p>
           </CardContent>
         </Card>
