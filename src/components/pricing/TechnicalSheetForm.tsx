@@ -10,6 +10,7 @@ import {
   TechnicalSheet,
   PricingConfigGlobal,
   PricingConfigProduct,
+  PricingBasis,
   useUpsertTechnicalSheet,
   calculatePricing,
 } from '@/hooks/usePricingData';
@@ -24,6 +25,7 @@ import { IngredientsList } from './IngredientsList';
 import { ProductConfigSection } from './ProductConfigSection';
 import { FileText, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface LocalIngredient {
   id: string;
