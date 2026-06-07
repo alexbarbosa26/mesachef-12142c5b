@@ -174,11 +174,11 @@ export function IngredientsList({
               <Input
                 id="ingredient-quantity"
                 type="number"
-                step="0.01"
+                step="0.001"
                 min="0"
                 value={quantity}
                 onChange={e => setQuantity(e.target.value)}
-                placeholder="0"
+                placeholder="0.000"
               />
             </div>
 
@@ -243,7 +243,7 @@ export function IngredientsList({
                         ) : (
                           <Input
                             type="number"
-                            step="0.01"
+                            step="0.001"
                             min="0"
                             value={ing.quantity}
                             onChange={e => handleUpdateQuantity(ing.id, parseFloat(e.target.value) || 0)}
