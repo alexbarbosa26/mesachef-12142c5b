@@ -129,6 +129,11 @@ export function calculatePricing(
       pv: 0,
       pm: 0,
       sale_price: sheet.sale_price || 0,
+      pricing_basis: sheet.pricing_basis ?? 'unit',
+      reference_suggested_price: 0,
+      reference_min_price: 0,
+      reference_cost: 0,
+      cmv_pct: 0,
       profit_per_unit: 0,
       investment_per_unit: 0,
       contribution_margin: 0,
@@ -144,6 +149,11 @@ export function calculatePricing(
       pv: 0,
       pm: 0,
       sale_price: sheet.sale_price || 0,
+      pricing_basis: sheet.pricing_basis ?? 'unit',
+      reference_suggested_price: 0,
+      reference_min_price: 0,
+      reference_cost: 0,
+      cmv_pct: 0,
       profit_per_unit: 0,
       investment_per_unit: 0,
       contribution_margin: 0,
@@ -173,20 +183,43 @@ export function calculatePricing(
   // Preço de venda informado pelo usuário
   const sale_price = sheet.sale_price || 0;
 
-  // Determina status baseado no preço de venda informado vs sugerido/mínimo
+  // Custo e preço por KG e por porção
+  const cost_per_kg = sheet.yield_kg > 0 ? cvu / sheet.yield_kg : undefined;
+  const price_per_kg = sheet.yield_kg > 0 ? pv / sheet.yield_kg : undefined;
+  const min_price_per_kg = sheet.yield_kg > 0 ? pm / sheet.yield_kg : undefined;
+  const cost_per_portion = sheet.yield_portions > 0 ? cvu / sheet.yield_portions : undefined;
+  const price_per_portion = sheet.yield_portions > 0 ? pv / sheet.yield_portions : undefined;
+  const min_price_per_portion = sheet.yield_portions > 0 ? pm / sheet.yield_portions : undefined;
+
+  // Base de comparação (unidade / kg / porção)
+  const pricing_basis: PricingBasis = sheet.pricing_basis ?? 'unit';
+  let reference_suggested_price = pv;
+  let reference_min_price = pm;
+  let reference_cost = cvu;
+  if (pricing_basis === 'kg' && sheet.yield_kg > 0) {
+    reference_suggested_price = price_per_kg!;
+    reference_min_price = min_price_per_kg!;
+    reference_cost = cost_per_kg!;
+  } else if (pricing_basis === 'portion' && sheet.yield_portions > 0) {
+    reference_suggested_price = price_per_portion!;
+    reference_min_price = min_price_per_portion!;
+    reference_cost = cost_per_portion!;
+  }
+
+  // CMV% = custo / preço praticado (mesma base)
+  const cmv_pct = sale_price > 0 ? (reference_cost / sale_price) * 100 : 0;
+
+  // Determina status baseado no preço de venda informado vs sugerido/mínimo da base escolhida
   let status: PricingStatus = 'saudavel';
-  
   if (sale_price > 0) {
-    // Se tem preço de venda informado, compara com sugerido e mínimo
-    if (sale_price < pm) {
+    if (sale_price < reference_min_price) {
       status = 'inviavel';
-    } else if (sale_price < pv) {
+    } else if (sale_price < reference_suggested_price) {
       status = 'atencao';
     } else {
       status = 'saudavel';
     }
   } else {
-    // Sem preço de venda informado, usa lógica original
     if (pv <= pm) {
       status = 'inviavel';
     } else if (
@@ -197,17 +230,16 @@ export function calculatePricing(
     }
   }
 
-  // Custo e preço por KG e por porção
-  const cost_per_kg = sheet.yield_kg > 0 ? cvu / sheet.yield_kg : undefined;
-  const price_per_kg = sheet.yield_kg > 0 ? pv / sheet.yield_kg : undefined;
-  const cost_per_portion = sheet.yield_portions > 0 ? cvu / sheet.yield_portions : undefined;
-  const price_per_portion = sheet.yield_portions > 0 ? pv / sheet.yield_portions : undefined;
-
   return {
     cvu,
     pv,
     pm,
     sale_price,
+    pricing_basis,
+    reference_suggested_price,
+    reference_min_price,
+    reference_cost,
+    cmv_pct,
     profit_per_unit,
     investment_per_unit,
     contribution_margin,
