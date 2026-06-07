@@ -326,8 +326,8 @@ const Dashboard = () => {
                         <Label>Valor (R$)</Label>
                         <Input
                           type="number"
-                          step="0.01"
-                          placeholder="0.00"
+                          step="0.001"
+                          placeholder="0.000"
                           value={newItem.value}
                           onChange={(e) =>
                             setNewItem({ ...newItem, value: e.target.value })
@@ -339,7 +339,7 @@ const Dashboard = () => {
                       <Label>Estoque Mínimo</Label>
                       <Input
                         type="number"
-                        step="0.01"
+                        step="0.001"
                         value={newItem.minimum_stock}
                         onChange={(e) =>
                           setNewItem({
@@ -811,7 +811,7 @@ const Dashboard = () => {
                                               <Label>Valor (R$)</Label>
                                               <Input
                                                 type="number"
-                                                step="0.01"
+                                                step="0.001"
                                                 value={editingItem?.value || ''}
                                                 onChange={(e) =>
                                                   setEditingItem((prev) =>
@@ -830,7 +830,7 @@ const Dashboard = () => {
                                             <Label>Estoque Mínimo</Label>
                                             <Input
                                               type="number"
-                                              step="0.01"
+                                              step="0.001"
                                               value={
                                                 editingItem?.minimum_stock || ''
                                               }

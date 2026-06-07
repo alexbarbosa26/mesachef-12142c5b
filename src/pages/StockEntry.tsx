@@ -389,7 +389,7 @@ const StockEntry = () => {
                             >
                               <Input
                                 type="number"
-                                step="0.01"
+                                step="0.001"
                                 min="0"
                                 value={getDisplayValue(item.id, 'quantity')}
                                 onChange={(e) =>
