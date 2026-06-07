@@ -830,7 +830,7 @@ const Dashboard = () => {
                                             <Label>Estoque Mínimo</Label>
                                             <Input
                                               type="number"
-                                              step="0.01"
+                                              step="0.001"
                                               value={
                                                 editingItem?.minimum_stock || ''
                                               }
