@@ -180,6 +180,7 @@ export type Database = {
       custom_columns: {
         Row: {
           column_type: string
+          company_id: string | null
           created_at: string
           id: string
           is_required: boolean
@@ -187,6 +188,7 @@ export type Database = {
         }
         Insert: {
           column_type?: string
+          company_id?: string | null
           created_at?: string
           id?: string
           is_required?: boolean
@@ -194,6 +196,7 @@ export type Database = {
         }
         Update: {
           column_type?: string
+          company_id?: string | null
           created_at?: string
           id?: string
           is_required?: boolean
