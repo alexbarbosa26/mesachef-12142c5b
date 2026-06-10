@@ -219,7 +219,6 @@ export default function SelfService() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[160px]">Receita</TableHead>
-                        <TableHead>Categoria</TableHead>
                         <TableHead className="text-right">Custo/Kg</TableHead>
                         <TableHead className="text-right">Produzido (Kg)</TableHead>
                         <TableHead className="text-right">Custo prod.</TableHead>
@@ -232,7 +231,7 @@ export default function SelfService() {
                     </TableHeader>
                     <TableBody>
                       {recipes.length === 0 ? (
-                        <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">Nenhuma receita adicionada</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Nenhuma receita adicionada</TableCell></TableRow>
                       ) : recipes.map((r) => {
                         const prodCost = r.cost_per_kg * r.produced_kg;
                         const leftoverCost = r.cost_per_kg * r.leftover_kg;
@@ -241,7 +240,6 @@ export default function SelfService() {
                         return (
                           <TableRow key={r.id}>
                             <TableCell><Input value={r.name} onChange={(e) => updateRecipe(r.id, { name: e.target.value })} /></TableCell>
-                            <TableCell><Input value={r.category} onChange={(e) => updateRecipe(r.id, { category: e.target.value })} /></TableCell>
                             <TableCell><Input className="text-right" type="number" step="0.001" value={r.cost_per_kg} onChange={(e) => updateRecipe(r.id, { cost_per_kg: parseFloat(e.target.value) || 0 })} /></TableCell>
                             <TableCell><Input className="text-right" type="number" step="0.001" value={r.produced_kg} onChange={(e) => updateRecipe(r.id, { produced_kg: parseFloat(e.target.value) || 0 })} /></TableCell>
                             <TableCell className="text-right">{fmt(prodCost)}</TableCell>
