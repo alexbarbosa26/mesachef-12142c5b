@@ -406,6 +406,155 @@ export type Database = {
           },
         ]
       }
+      self_service_daily_items: {
+        Row: {
+          category: string | null
+          company_id: string
+          consumed_kg: number
+          cost_participation_percentage: number
+          cost_per_kg: number
+          created_at: string
+          daily_record_id: string
+          id: string
+          leftover_kg: number
+          leftover_percentage: number
+          leftover_total_value: number
+          produced_kg: number
+          production_total_cost: number
+          recipe_name: string
+          sales_participation_percentage: number
+          total_sales: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          consumed_kg?: number
+          cost_participation_percentage?: number
+          cost_per_kg?: number
+          created_at?: string
+          daily_record_id: string
+          id?: string
+          leftover_kg?: number
+          leftover_percentage?: number
+          leftover_total_value?: number
+          produced_kg?: number
+          production_total_cost?: number
+          recipe_name: string
+          sales_participation_percentage?: number
+          total_sales?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          consumed_kg?: number
+          cost_participation_percentage?: number
+          cost_per_kg?: number
+          created_at?: string
+          daily_record_id?: string
+          id?: string
+          leftover_kg?: number
+          leftover_percentage?: number
+          leftover_total_value?: number
+          produced_kg?: number
+          production_total_cost?: number
+          recipe_name?: string
+          sales_participation_percentage?: number
+          total_sales?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "self_service_daily_items_daily_record_id_fkey"
+            columns: ["daily_record_id"]
+            isOneToOne: false
+            referencedRelation: "self_service_daily_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      self_service_daily_records: {
+        Row: {
+          actual_average_consumption: number
+          actual_meals: number
+          company_id: string
+          created_at: string
+          date: string
+          estimated_cmv: number
+          estimated_result: number
+          id: string
+          markup: number
+          observations: string | null
+          planned_average_consumption: number
+          planned_meals: number
+          practiced_kg_price: number
+          suggested_kg_price: number
+          total_consumed_kg: number
+          total_leftover_kg: number
+          total_leftover_value: number
+          total_produced_kg: number
+          total_production_cost: number
+          total_recipes: number
+          total_sales: number
+          updated_at: string
+          user_id: string
+          weekday: string | null
+        }
+        Insert: {
+          actual_average_consumption?: number
+          actual_meals?: number
+          company_id: string
+          created_at?: string
+          date: string
+          estimated_cmv?: number
+          estimated_result?: number
+          id?: string
+          markup?: number
+          observations?: string | null
+          planned_average_consumption?: number
+          planned_meals?: number
+          practiced_kg_price?: number
+          suggested_kg_price?: number
+          total_consumed_kg?: number
+          total_leftover_kg?: number
+          total_leftover_value?: number
+          total_produced_kg?: number
+          total_production_cost?: number
+          total_recipes?: number
+          total_sales?: number
+          updated_at?: string
+          user_id?: string
+          weekday?: string | null
+        }
+        Update: {
+          actual_average_consumption?: number
+          actual_meals?: number
+          company_id?: string
+          created_at?: string
+          date?: string
+          estimated_cmv?: number
+          estimated_result?: number
+          id?: string
+          markup?: number
+          observations?: string | null
+          planned_average_consumption?: number
+          planned_meals?: number
+          practiced_kg_price?: number
+          suggested_kg_price?: number
+          total_consumed_kg?: number
+          total_leftover_kg?: number
+          total_leftover_value?: number
+          total_produced_kg?: number
+          total_production_cost?: number
+          total_recipes?: number
+          total_sales?: number
+          updated_at?: string
+          user_id?: string
+          weekday?: string | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
