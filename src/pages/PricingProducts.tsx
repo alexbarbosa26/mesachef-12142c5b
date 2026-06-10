@@ -77,12 +77,13 @@ export default function PricingProducts() {
       const sheet = sheets.find((s) => s.product_id === product.id);
       const productConfig = productConfigs.find((c) => c.product_id === product.id);
       const calculated = globalConfig ? calculatePricing(sheet, globalConfig, productConfig) : undefined;
-
+      const profit_pct_desired = productConfig?.profit_pct ?? globalConfig?.profit_pct ?? 0;
       return {
         ...product,
         technical_sheet: sheet,
         config: productConfig,
         calculated,
+        profit_pct_desired,
       };
     });
   }, [products, sheets, globalConfig, productConfigs]);
@@ -180,27 +181,31 @@ export default function PricingProducts() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Produto</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Unidade</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                     {isAdmin && (
                       <>
+                        <TableHead className="text-right">Custo Ficha (R$)</TableHead>
+                        <TableHead className="text-right">Lucro Desejado (%)</TableHead>
                         <TableHead className="text-right">Preço Sugerido</TableHead>
                         <TableHead className="text-right">Preço Venda</TableHead>
+                        <TableHead className="text-right">Lucro Aplicado (%)</TableHead>
                         <TableHead className="text-center">Viabilidade</TableHead>
+                        <TableHead className="text-right">Lucro (R$)</TableHead>
                       </>
                     )}
                     <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product) => {
+                    const c = product.calculated;
+                    const refCost = c?.reference_cost ?? 0;
+                    const salePrice = c?.sale_price ?? 0;
+                    const appliedProfitPct = salePrice > 0 ? ((salePrice - refCost) / salePrice) * 100 : 0;
+                    const profitValue = salePrice > 0 ? salePrice - refCost : 0;
+                    return (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{CATEGORY_LABELS[product.category]}</Badge>
-                      </TableCell>
-                      <TableCell>{UNIT_LABELS[product.sale_unit]}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant={product.is_active ? 'default' : 'outline'}>
                           {product.is_active ? 'Ativo' : 'Inativo'}
@@ -209,34 +214,32 @@ export default function PricingProducts() {
                       {isAdmin && (
                         <>
                           <TableCell className="text-right font-medium">
-                            {product.calculated ? (
-                              <span className="flex items-center justify-end gap-1">
-                                <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-                                {formatCurrency(product.calculated.pv)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">Sem ficha</span>
-                            )}
+                            {c ? formatCurrency(refCost) : <span className="text-muted-foreground text-sm">Sem ficha</span>}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {product.profit_pct_desired.toFixed(1)}%
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {product.calculated && product.calculated.sale_price > 0 ? (
-                              <span className="flex items-center justify-end gap-1">
-                                <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-                                {formatCurrency(product.calculated.sale_price)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
+                            {c ? formatCurrency(c.reference_suggested_price) : <span className="text-muted-foreground text-sm">-</span>}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {salePrice > 0 ? formatCurrency(salePrice) : <span className="text-muted-foreground text-sm">-</span>}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {salePrice > 0 ? `${appliedProfitPct.toFixed(1)}%` : '-'}
                           </TableCell>
                           <TableCell className="text-center">
-                            {product.calculated ? (
-                              <PricingStatusBadge status={product.calculated.status} />
+                            {c ? (
+                              <PricingStatusBadge status={c.status} />
                             ) : (
                               <Badge variant="outline" className="gap-1">
                                 <FileText className="w-3 h-3" />
                                 Pendente
                               </Badge>
                             )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {salePrice > 0 ? formatCurrency(profitValue) : '-'}
                           </TableCell>
                         </>
                       )}
@@ -271,7 +274,8 @@ export default function PricingProducts() {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

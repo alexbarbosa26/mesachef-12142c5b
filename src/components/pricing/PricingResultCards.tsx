@@ -55,10 +55,12 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-primary" />
               Preço Sugerido
+              {pricing.pricing_basis === 'kg' && ' (por Kg)'}
+              {pricing.pricing_basis === 'portion' && ' (por Porção)'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-primary">{formatCurrency(pricing.pv)}</p>
+            <p className="text-2xl font-bold text-primary">{formatCurrency(pricing.reference_suggested_price)}</p>
             <p className="text-xs text-muted-foreground mt-1">Com lucro e investimento</p>
           </CardContent>
         </Card>
@@ -68,10 +70,12 @@ export function PricingResultCards({ pricing, showDetailed = true }: PricingResu
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Target className="w-4 h-4 text-yellow-600" />
               Preço Mínimo
+              {pricing.pricing_basis === 'kg' && ' (por Kg)'}
+              {pricing.pricing_basis === 'portion' && ' (por Porção)'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-yellow-600">{formatCurrency(pricing.pm)}</p>
+            <p className="text-2xl font-bold text-yellow-600">{formatCurrency(pricing.reference_min_price)}</p>
             <p className="text-xs text-muted-foreground mt-1">Sobrevivência (sem lucro)</p>
           </CardContent>
         </Card>
