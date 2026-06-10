@@ -84,6 +84,9 @@ export interface CalculatedPricing {
   price_per_kg?: number;
   cost_per_portion?: number;
   price_per_portion?: number;
+  applied_profit_value: number;
+  applied_profit_pct: number;
+  desired_profit_pct: number;
   status: PricingStatus;
   error?: string;
 }
