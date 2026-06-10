@@ -19,6 +19,7 @@ import {
   useTechnicalSheetIngredients,
   useSaveIngredients,
   IngredientUnit,
+  calculateIngredientCost,
 } from '@/hooks/useTechnicalSheetIngredients';
 import { PricingResultCards } from './PricingResultCards';
 import { IngredientsList } from './IngredientsList';
@@ -98,17 +99,26 @@ export function TechnicalSheetForm({
   useEffect(() => {
     if (existingIngredients && existingIngredients.length > 0) {
       setUseIngredients(true);
+      const itemMap = new Map(stockItems.map((s) => [s.id, s]));
       setIngredients(
-        existingIngredients.map(ing => ({
-          id: ing.id,
-          stock_item_id: ing.stock_item_id,
-          quantity: Number(ing.quantity),
-          unit_type: ing.unit_type as IngredientUnit,
-          calculated_cost: Number(ing.calculated_cost),
-        }))
+        existingIngredients.map((ing) => {
+          const stockItem = itemMap.get(ing.stock_item_id);
+          const qty = Number(ing.quantity);
+          // Recalcula com o preço ATUAL do insumo (não usa o valor congelado)
+          const liveCost = stockItem
+            ? calculateIngredientCost(stockItem, qty, ing.unit_type as IngredientUnit)
+            : Number(ing.calculated_cost);
+          return {
+            id: ing.id,
+            stock_item_id: ing.stock_item_id,
+            quantity: qty,
+            unit_type: ing.unit_type as IngredientUnit,
+            calculated_cost: liveCost,
+          };
+        })
       );
     }
-  }, [existingIngredients]);
+  }, [existingIngredients, stockItems]);
 
   // Calcula CMV baseado nos ingredientes ou valor manual
   const calculatedCmv = useMemo(() => {
