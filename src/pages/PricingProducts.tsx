@@ -201,8 +201,8 @@ export default function PricingProducts() {
                     const c = product.calculated;
                     const refCost = c?.reference_cost ?? 0;
                     const salePrice = c?.sale_price ?? 0;
-                    const appliedProfitPct = salePrice > 0 ? ((salePrice - refCost) / salePrice) * 100 : 0;
-                    const profitValue = salePrice > 0 ? salePrice - refCost : 0;
+                    const appliedProfitPct = c?.applied_profit_pct ?? 0;
+                    const profitValue = c?.applied_profit_value ?? 0;
                     return (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
