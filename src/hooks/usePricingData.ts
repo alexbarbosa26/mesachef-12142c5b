@@ -141,6 +141,9 @@ export function calculatePricing(
       investment_per_unit: 0,
       contribution_margin: 0,
       contribution_margin_pct: 0,
+      applied_profit_value: 0,
+      applied_profit_pct: 0,
+      desired_profit_pct: 0,
       status: 'inviavel',
       error: 'Percentuais não podem somar 100% ou mais.',
     };
@@ -161,6 +164,9 @@ export function calculatePricing(
       investment_per_unit: 0,
       contribution_margin: 0,
       contribution_margin_pct: 0,
+      applied_profit_value: 0,
+      applied_profit_pct: 0,
+      desired_profit_pct: 0,
       status: 'inviavel',
       error: 'DV+DF não podem somar 100% ou mais.',
     };
@@ -212,12 +218,19 @@ export function calculatePricing(
   // CMV% = custo / preço praticado (mesma base)
   const cmv_pct = sale_price > 0 ? (reference_cost / sale_price) * 100 : 0;
 
-  // Determina status baseado no preço de venda informado vs sugerido/mínimo da base escolhida
+  // Lucro aplicado real: preço praticado - CV(%) sobre preço - CF(%) sobre preço - custo da ficha
+  const applied_profit_value = sale_price > 0
+    ? sale_price - (sale_price * dv) - (sale_price * df) - reference_cost
+    : 0;
+  const applied_profit_pct = sale_price > 0 ? (applied_profit_value / sale_price) * 100 : 0;
+  const desired_profit_pct = l * 100;
+
+  // Status baseado em lucro aplicado vs lucro desejado
   let status: PricingStatus = 'saudavel';
   if (sale_price > 0) {
-    if (sale_price < reference_min_price) {
+    if (applied_profit_value < 0) {
       status = 'inviavel';
-    } else if (sale_price < reference_suggested_price) {
+    } else if (applied_profit_pct < desired_profit_pct) {
       status = 'atencao';
     } else {
       status = 'saudavel';
@@ -251,6 +264,9 @@ export function calculatePricing(
     price_per_kg,
     cost_per_portion,
     price_per_portion,
+    applied_profit_value,
+    applied_profit_pct,
+    desired_profit_pct,
     status,
   };
 }
