@@ -298,10 +298,32 @@ export function useTechnicalSheets() {
       
       const { data, error } = await supabase
         .from('technical_sheets')
-        .select('*');
+        .select(`
+          *,
+          technical_sheet_ingredients (
+            quantity,
+            unit_type,
+            stock_items ( value )
+          )
+        `);
 
       if (error) throw error;
-      return data as TechnicalSheet[];
+      // Recalcula o CMV dinamicamente a partir do preço atual dos insumos.
+      // Mantém compatibilidade caso a ficha não use ingredientes (cmv manual).
+      return (data as any[]).map((s) => {
+        const ings: any[] = s.technical_sheet_ingredients || [];
+        if (ings.length > 0) {
+          const liveCmv = ings.reduce((sum, ing) => {
+            const price = Number(ing.stock_items?.value) || 0;
+            let qty = Number(ing.quantity) || 0;
+            const u = String(ing.unit_type || '').toLowerCase();
+            if (u === 'g' || u === 'ml') qty = qty / 1000;
+            return sum + price * qty;
+          }, 0);
+          return { ...s, cmv: liveCmv } as TechnicalSheet;
+        }
+        return s as TechnicalSheet;
+      });
     },
     enabled: isAdmin,
   });

@@ -11,6 +11,8 @@ import { Plus, Trash2, UtensilsCrossed, Save, Eye, AlertTriangle, TrendingUp, Tr
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePricingProducts, useTechnicalSheets } from '@/hooks/usePricingData';
 
 interface Recipe {
   id: string;
@@ -59,6 +61,24 @@ export default function SelfService() {
   const today = new Date().toISOString().split('T')[0];
   const [tab, setTab] = useState('today');
 
+  // Fichas técnicas disponíveis (para importar receita com custo/Kg atualizado)
+  const { data: pricingProducts = [] } = usePricingProducts();
+  const { data: techSheets = [] } = useTechnicalSheets();
+  const sheetOptions = useMemo(() => {
+    return pricingProducts
+      .map((p) => {
+        const sheet = techSheets.find((s) => s.product_id === p.id);
+        if (!sheet || !sheet.yield_kg || sheet.yield_kg <= 0) return null;
+        const cvu =
+          Number(sheet.cmv || 0) +
+          (Number(sheet.labor_cost_per_hour || 0) * Number(sheet.prep_time_minutes || 0)) / 60 +
+          Number(sheet.packaging_cost || 0);
+        const cost_per_kg = cvu / Number(sheet.yield_kg);
+        return { product_id: p.id, name: p.name, cost_per_kg };
+      })
+      .filter((x): x is { product_id: string; name: string; cost_per_kg: number } => !!x);
+  }, [pricingProducts, techSheets]);
+
   // ===== Daily form =====
   const [recordId, setRecordId] = useState<string | null>(null);
   const [date, setDate] = useState(today);
@@ -74,6 +94,14 @@ export default function SelfService() {
   const totals = useTotals(recipes, pricePracticed, markup, actualMeals);
 
   const addRecipe = () => setRecipes((r) => [...r, { id: crypto.randomUUID(), name: '', category: '', cost_per_kg: 0, produced_kg: 0, leftover_kg: 0 }]);
+  const importFromSheet = (productId: string) => {
+    const opt = sheetOptions.find((s) => s.product_id === productId);
+    if (!opt) return;
+    setRecipes((r) => [
+      ...r,
+      { id: crypto.randomUUID(), name: opt.name, category: '', cost_per_kg: Number(opt.cost_per_kg.toFixed(4)), produced_kg: 0, leftover_kg: 0 },
+    ]);
+  };
   const updateRecipe = (id: string, patch: Partial<Recipe>) => setRecipes((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   const removeRecipe = (id: string) => setRecipes((rs) => rs.filter((r) => r.id !== id));
 
@@ -211,7 +239,23 @@ export default function SelfService() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Receitas do Buffet</CardTitle>
-                <Button onClick={addRecipe} size="sm"><Plus className="w-4 h-4 mr-1" />Adicionar</Button>
+                <div className="flex gap-2 items-center">
+                  {sheetOptions.length > 0 && (
+                    <Select value="" onValueChange={(v) => importFromSheet(v)}>
+                      <SelectTrigger className="w-[240px]">
+                        <SelectValue placeholder="Importar de ficha técnica" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sheetOptions.map((o) => (
+                          <SelectItem key={o.product_id} value={o.product_id}>
+                            {o.name} — {fmt(o.cost_per_kg)}/Kg
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Button onClick={addRecipe} size="sm"><Plus className="w-4 h-4 mr-1" />Adicionar</Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
