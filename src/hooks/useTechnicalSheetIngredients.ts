@@ -232,6 +232,8 @@ export function useSaveIngredients() {
     },
     onSuccess: ({ technicalSheetId, count }) => {
       queryClient.invalidateQueries({ queryKey: ['technical-sheet-ingredients', technicalSheetId] });
+      // Invalida a lista de fichas técnicas para recalcular o CMV exibido em pricing/self-service
+      queryClient.invalidateQueries({ queryKey: ['technical-sheets'] });
       logAction({
         action: 'bulk_update',
         entity_type: 'technical_sheet_ingredients',
