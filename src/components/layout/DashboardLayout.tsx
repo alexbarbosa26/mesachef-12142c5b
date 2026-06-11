@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
@@ -11,6 +11,18 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState<boolean>(() =>
+    typeof window !== 'undefined' && localStorage.getItem('sidebar-collapsed') === '1'
+  );
+  useEffect(() => {
+    const handler = () => setCollapsed(localStorage.getItem('sidebar-collapsed') === '1');
+    window.addEventListener('sidebar-collapsed-changed', handler);
+    window.addEventListener('storage', handler);
+    return () => {
+      window.removeEventListener('sidebar-collapsed-changed', handler);
+      window.removeEventListener('storage', handler);
+    };
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -37,7 +49,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="min-h-screen bg-background">
       <Sidebar />
       {/* Add padding-top for mobile header (h-14 = 3.5rem) */}
-      <main className="lg:ml-64 min-h-screen p-4 lg:p-8 pt-[4.5rem] lg:pt-8">
+      <main className={`${collapsed ? 'lg:ml-16' : 'lg:ml-64'} transition-[margin] duration-300 ease-out min-h-screen p-4 lg:p-8 pt-[4.5rem] lg:pt-8`}>
         {children}
       </main>
     </div>
