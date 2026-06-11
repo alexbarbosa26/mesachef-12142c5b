@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useStockData } from '@/hooks/useStockData';
 import { useSettings } from '@/hooks/useSettings';
 import { getExpiryStatus } from '@/components/ExpiryBadge';
 import ThemeToggle from '@/components/ThemeToggle';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 const Sidebar = () => {
   const {
     user,
@@ -21,6 +22,14 @@ const Sidebar = () => {
   } = useAuth();
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebar-collapsed') === '1';
+  });
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', isCollapsed ? '1' : '0');
+    window.dispatchEvent(new Event('sidebar-collapsed-changed'));
+  }, [isCollapsed]);
   const {
     stockItems
   } = useStockData();
@@ -128,14 +137,16 @@ const Sidebar = () => {
 
   const toggleGroup = (name: string) =>
     setOpenGroups(prev => ({ ...prev, [name]: !prev[name] }));
-  const NavContent = () => <>
-      <div className="p-6">
-        <div className="flex items-center gap-3">
-          <img alt="MesaChef Logo" className="w-12 h-12 object-contain" src={logo} />
-          <div>
-            <h1 className="font-bold text-sidebar-foreground">MesaChef</h1>
-            <p className="text-xs text-sidebar-foreground/60">Estoque & Gestão</p>
-          </div>
+  const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => <>
+      <div className={cn("p-6", collapsed && "p-3 flex justify-center")}>
+        <div className={cn("flex items-center gap-3", collapsed && "gap-0")}>
+          <img alt="MesaChef Logo" className={cn("object-contain", collapsed ? "w-9 h-9" : "w-12 h-12")} src={logo} />
+          {!collapsed && (
+            <div>
+              <h1 className="font-bold text-sidebar-foreground">MesaChef</h1>
+              <p className="text-xs text-sidebar-foreground/60">Estoque & Gestão</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -143,22 +154,32 @@ const Sidebar = () => {
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto scrollbar-thin scrollbar-thumb-sidebar-border scrollbar-track-transparent">
           {filteredStandalone.map(item => {
             const isActive = location.pathname === item.href;
-            return (
+            const link = (
               <Link
                 key={item.href}
                 to={item.href}
                 onClick={() => setIsMobileOpen(false)}
                 className={cn(
                   'flex items-center gap-2.5 px-3 py-2 rounded-md transition-base text-sm',
+                  collapsed && 'justify-center px-2',
                   isActive
                     ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                     : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                 )}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
-                <span className="font-medium truncate">{item.name}</span>
+                {!collapsed && <span className="font-medium truncate">{item.name}</span>}
               </Link>
             );
+            if (collapsed) {
+              return (
+                <Tooltip key={item.href} delayDuration={0}>
+                  <TooltipTrigger asChild>{link}</TooltipTrigger>
+                  <TooltipContent side="right">{item.name}</TooltipContent>
+                </Tooltip>
+              );
+            }
+            return link;
           })}
 
           {filteredGroups.map(group => {
@@ -166,6 +187,34 @@ const Sidebar = () => {
             const hasActiveChild = group.items.some(
               i => location.pathname === i.href || location.pathname.startsWith(i.href + '/')
             );
+            if (collapsed) {
+              return (
+                <div key={group.name} className="pt-1 space-y-0.5">
+                  {group.items.map(item => {
+                    const isActive = location.pathname === item.href;
+                    return (
+                      <Tooltip key={item.href} delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <Link
+                            to={item.href}
+                            onClick={() => setIsMobileOpen(false)}
+                            className={cn(
+                              'flex items-center justify-center px-2 py-2 rounded-md transition-base',
+                              isActive
+                                ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                            )}
+                          >
+                            <item.icon className="w-4 h-4 shrink-0" />
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">{item.name}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              );
+            }
             return (
               <div key={group.name} className="pt-1">
                 <button
@@ -217,30 +266,51 @@ const Sidebar = () => {
         </nav>
       </div>
 
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 px-4 py-2 mb-3">
-          <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-medium text-sidebar-accent-foreground">
-              {user?.email?.charAt(0).toUpperCase()}
-            </span>
+      <div className={cn("p-4 border-t border-sidebar-border", collapsed && "p-2")}>
+        {collapsed ? (
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center" title={user?.email || ''}>
+              <span className="text-sm font-medium text-sidebar-accent-foreground">
+                {user?.email?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <ThemeToggle variant="sidebar" />
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sair</TooltipContent>
+            </Tooltip>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">
-              {user?.email}
-            </p>
-            <p className="text-xs text-sidebar-foreground/60 capitalize">
-              {userRole || 'Carregando...'}
-            </p>
-          </div>
-          <ThemeToggle variant="sidebar" />
-        </div>
-        <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={signOut}>
-          <LogOut className="w-4 h-4 mr-3" />
-          Sair
-        </Button>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 px-4 py-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+                <span className="text-sm font-medium text-sidebar-accent-foreground">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {user?.email}
+                </p>
+                <p className="text-xs text-sidebar-foreground/60 capitalize">
+                  {userRole || 'Carregando...'}
+                </p>
+              </div>
+              <ThemeToggle variant="sidebar" />
+            </div>
+            <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-3" />
+              Sair
+            </Button>
+          </>
+        )}
       </div>
     </>;
-  return <>
+  return <TooltipProvider delayDuration={0}>
       {/* Mobile header bar - fixed at top, contains menu button */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-background border-b border-border z-40 lg:hidden flex items-center justify-between px-4">
         <div className="flex items-center">
@@ -271,13 +341,34 @@ const Sidebar = () => {
       <div className={cn("fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300", isMobileOpen ? "opacity-100" : "opacity-0 pointer-events-none")} onClick={() => setIsMobileOpen(false)} />
 
       {/* Sidebar with smooth slide animation */}
-      <aside className={cn('fixed left-0 top-0 h-full w-64 bg-sidebar flex flex-col z-50', 'transition-all duration-300 ease-out', 'lg:translate-x-0 lg:shadow-none', isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full')}>
+      <aside className={cn(
+        'fixed left-0 top-0 h-full bg-sidebar flex flex-col z-50',
+        'transition-all duration-300 ease-out',
+        'lg:translate-x-0 lg:shadow-none',
+        isMobileOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full w-64',
+        isCollapsed ? 'lg:w-16' : 'lg:w-64'
+      )}>
         {/* Close button inside sidebar with rotation animation */}
         <Button variant="ghost" size="icon" className={cn("absolute top-4 right-4 lg:hidden text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent", "transition-all duration-200 hover:rotate-90")} onClick={() => setIsMobileOpen(false)}>
           <X className="w-5 h-5" />
         </Button>
-        <NavContent />
+        {/* Desktop collapse toggle */}
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(v => !v)}
+          aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          className="hidden lg:flex absolute -right-3 top-7 z-10 w-6 h-6 items-center justify-center rounded-full border border-sidebar-border bg-background text-foreground shadow-sm hover:bg-accent transition-colors"
+        >
+          {isCollapsed ? <ChevronsRight className="w-3.5 h-3.5" /> : <ChevronsLeft className="w-3.5 h-3.5" />}
+        </button>
+        {/* Mobile uses expanded; desktop honors isCollapsed */}
+        <div className="hidden lg:flex flex-col h-full">
+          <NavContent collapsed={isCollapsed} />
+        </div>
+        <div className="flex lg:hidden flex-col h-full">
+          <NavContent collapsed={false} />
+        </div>
       </aside>
-    </>;
+    </TooltipProvider>;
 };
 export default Sidebar;
