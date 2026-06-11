@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Package } from 'lucide-react';
+import { Plus, Trash2, Package, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { StockItem } from '@/hooks/useStockData';
 import {
   IngredientUnit,
@@ -27,16 +28,45 @@ import {
   calculateIngredientCost,
 } from '@/hooks/useTechnicalSheetIngredients';
 
+export interface SheetOption {
+  id: string;
+  name: string;
+  cvu: number;
+  yield_kg: number;
+  yield_portions: number;
+}
+
 interface LocalIngredient {
   id: string;
-  stock_item_id: string;
+  component_type: 'stock' | 'sheet';
+  stock_item_id: string | null;
+  linked_sheet_id: string | null;
   quantity: number;
   unit_type: IngredientUnit;
   calculated_cost: number;
 }
 
+export function calculateSheetComponentCost(
+  sheet: SheetOption,
+  quantity: number,
+  unitType: IngredientUnit
+): number {
+  const cvu = Number(sheet.cvu) || 0;
+  if (cvu <= 0 || quantity <= 0) return 0;
+  if ((unitType === 'kg' || unitType === 'g') && sheet.yield_kg > 0) {
+    const q = unitType === 'g' ? quantity / 1000 : quantity;
+    return (cvu * q) / sheet.yield_kg;
+  }
+  if (unitType === 'porcao' && sheet.yield_portions > 0) {
+    return (cvu * quantity) / sheet.yield_portions;
+  }
+  // unidade (ou fallback): trata a ficha inteira como 1 unidade
+  return cvu * quantity;
+}
+
 interface IngredientsListProps {
   stockItems: StockItem[];
+  availableSheets?: SheetOption[];
   ingredients: LocalIngredient[];
   onChange: (ingredients: LocalIngredient[]) => void;
   disabled?: boolean;
@@ -44,11 +74,14 @@ interface IngredientsListProps {
 
 export function IngredientsList({
   stockItems,
+  availableSheets = [],
   ingredients,
   onChange,
   disabled = false,
 }: IngredientsListProps) {
+  const [componentType, setComponentType] = useState<'stock' | 'sheet'>('stock');
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [selectedSheetId, setSelectedSheetId] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
   const [unitType, setUnitType] = useState<IngredientUnit>('g');
 
@@ -59,11 +92,22 @@ export function IngredientsList({
     return map;
   }, [stockItems]);
 
+  const sheetsMap = useMemo(() => {
+    const map = new Map<string, SheetOption>();
+    availableSheets.forEach(s => map.set(s.id, s));
+    return map;
+  }, [availableSheets]);
+
   // Itens disponíveis (não adicionados ainda)
   const availableItems = useMemo(() => {
-    const addedIds = new Set(ingredients.map(i => i.stock_item_id));
+    const addedIds = new Set(ingredients.filter(i => i.component_type === 'stock').map(i => i.stock_item_id));
     return stockItems.filter(item => !addedIds.has(item.id));
   }, [stockItems, ingredients]);
+
+  const availableSheetOptions = useMemo(() => {
+    const addedIds = new Set(ingredients.filter(i => i.component_type === 'sheet').map(i => i.linked_sheet_id));
+    return availableSheets.filter(s => !addedIds.has(s.id));
+  }, [availableSheets, ingredients]);
 
   // Custo total dos ingredientes (CMV calculado)
   const totalCMV = useMemo(() => {
@@ -71,28 +115,49 @@ export function IngredientsList({
   }, [ingredients]);
 
   const handleAddIngredient = () => {
-    if (!selectedItemId || !quantity || parseFloat(quantity) <= 0) return;
-
-    const stockItem = stockItemsMap.get(selectedItemId);
-    if (!stockItem) return;
-
     const qty = parseFloat(quantity);
-    const cost = calculateIngredientCost(stockItem, qty, unitType);
+    if (!qty || qty <= 0) return;
 
-    const newIngredient: LocalIngredient = {
-      id: `temp-${Date.now()}`,
-      stock_item_id: selectedItemId,
-      quantity: qty,
-      unit_type: unitType,
-      calculated_cost: cost,
-    };
+    if (componentType === 'stock') {
+      if (!selectedItemId) return;
+      const stockItem = stockItemsMap.get(selectedItemId);
+      if (!stockItem) return;
+      const cost = calculateIngredientCost(stockItem, qty, unitType);
+      onChange([
+        ...ingredients,
+        {
+          id: `temp-${Date.now()}`,
+          component_type: 'stock',
+          stock_item_id: selectedItemId,
+          linked_sheet_id: null,
+          quantity: qty,
+          unit_type: unitType,
+          calculated_cost: cost,
+        },
+      ]);
+    } else {
+      if (!selectedSheetId) return;
+      const sheet = sheetsMap.get(selectedSheetId);
+      if (!sheet) return;
+      const cost = calculateSheetComponentCost(sheet, qty, unitType);
+      onChange([
+        ...ingredients,
+        {
+          id: `temp-${Date.now()}`,
+          component_type: 'sheet',
+          stock_item_id: null,
+          linked_sheet_id: selectedSheetId,
+          quantity: qty,
+          unit_type: unitType,
+          calculated_cost: cost,
+        },
+      ]);
+    }
 
-    onChange([...ingredients, newIngredient]);
-    
-    // Reset form
     setSelectedItemId('');
+    setSelectedSheetId('');
     setQuantity('');
-    setUnitType('g');
+    setUnitType(componentType === 'sheet' ? 'kg' : 'g');
   };
 
   const handleRemoveIngredient = (id: string) => {
@@ -103,8 +168,14 @@ export function IngredientsList({
     onChange(
       ingredients.map(ing => {
         if (ing.id === id) {
-          const stockItem = stockItemsMap.get(ing.stock_item_id);
-          const cost = stockItem ? calculateIngredientCost(stockItem, newQuantity, ing.unit_type) : 0;
+          let cost = 0;
+          if (ing.component_type === 'stock' && ing.stock_item_id) {
+            const stockItem = stockItemsMap.get(ing.stock_item_id);
+            cost = stockItem ? calculateIngredientCost(stockItem, newQuantity, ing.unit_type) : 0;
+          } else if (ing.component_type === 'sheet' && ing.linked_sheet_id) {
+            const sh = sheetsMap.get(ing.linked_sheet_id);
+            cost = sh ? calculateSheetComponentCost(sh, newQuantity, ing.unit_type) : 0;
+          }
           return { ...ing, quantity: newQuantity, calculated_cost: cost };
         }
         return ing;
@@ -116,8 +187,14 @@ export function IngredientsList({
     onChange(
       ingredients.map(ing => {
         if (ing.id === id) {
-          const stockItem = stockItemsMap.get(ing.stock_item_id);
-          const cost = stockItem ? calculateIngredientCost(stockItem, ing.quantity, newUnit) : 0;
+          let cost = 0;
+          if (ing.component_type === 'stock' && ing.stock_item_id) {
+            const stockItem = stockItemsMap.get(ing.stock_item_id);
+            cost = stockItem ? calculateIngredientCost(stockItem, ing.quantity, newUnit) : 0;
+          } else if (ing.component_type === 'sheet' && ing.linked_sheet_id) {
+            const sh = sheetsMap.get(ing.linked_sheet_id);
+            cost = sh ? calculateSheetComponentCost(sh, ing.quantity, newUnit) : 0;
+          }
           return { ...ing, unit_type: newUnit, calculated_cost: cost };
         }
         return ing;
@@ -137,36 +214,83 @@ export function IngredientsList({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Package className="w-5 h-5" />
-          Ingredientes (Insumos do Estoque)
+          Ingredientes (Insumos e Fichas Técnicas)
         </CardTitle>
         <CardDescription>
-          Adicione os ingredientes para calcular o CMV automaticamente
+          Adicione insumos do estoque ou outras fichas técnicas como componentes
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Formulário para adicionar ingrediente */}
         {!disabled && (
           <div className="flex flex-wrap gap-3 items-end p-4 bg-muted/50 rounded-lg">
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="ingredient-select">Ingrediente</Label>
-              <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                <SelectTrigger id="ingredient-select">
-                  <SelectValue placeholder="Selecione um insumo" />
+            <div className="w-40">
+              <Label htmlFor="component-type">Tipo</Label>
+              <Select
+                value={componentType}
+                onValueChange={(v) => {
+                  setComponentType(v as 'stock' | 'sheet');
+                  setSelectedItemId('');
+                  setSelectedSheetId('');
+                  setUnitType(v === 'sheet' ? 'kg' : 'g');
+                }}
+              >
+                <SelectTrigger id="component-type">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableItems.length === 0 ? (
-                    <SelectItem value="_empty" disabled>
-                      Todos os insumos já foram adicionados
-                    </SelectItem>
-                  ) : (
-                    availableItems.map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name} ({item.unit}) - {formatCurrency(item.value || 0)}
-                      </SelectItem>
-                    ))
-                  )}
+                  <SelectItem value="stock">Insumo</SelectItem>
+                  <SelectItem value="sheet">Ficha técnica</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="flex-1 min-w-[200px]">
+              <Label htmlFor="ingredient-select">
+                {componentType === 'stock' ? 'Insumo' : 'Ficha técnica'}
+              </Label>
+              {componentType === 'stock' ? (
+                <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                  <SelectTrigger id="ingredient-select">
+                    <SelectValue placeholder="Selecione um insumo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableItems.length === 0 ? (
+                      <SelectItem value="_empty" disabled>
+                        Todos os insumos já foram adicionados
+                      </SelectItem>
+                    ) : (
+                      availableItems.map(item => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name} ({item.unit}) - {formatCurrency(item.value || 0)}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={selectedSheetId} onValueChange={setSelectedSheetId}>
+                  <SelectTrigger id="ingredient-select">
+                    <SelectValue placeholder="Selecione uma ficha técnica" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSheetOptions.length === 0 ? (
+                      <SelectItem value="_empty" disabled>
+                        Nenhuma ficha técnica disponível
+                      </SelectItem>
+                    ) : (
+                      availableSheetOptions.map(s => {
+                        const perKg = s.yield_kg > 0 ? s.cvu / s.yield_kg : 0;
+                        return (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} {perKg > 0 ? `- ${formatCurrency(perKg)}/kg` : ''}
+                          </SelectItem>
+                        );
+                      })
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="w-24">
@@ -201,7 +325,11 @@ export function IngredientsList({
             <Button
               type="button"
               onClick={handleAddIngredient}
-              disabled={!selectedItemId || !quantity || parseFloat(quantity) <= 0}
+              disabled={
+                (componentType === 'stock' ? !selectedItemId : !selectedSheetId) ||
+                !quantity ||
+                parseFloat(quantity) <= 0
+              }
             >
               <Plus className="w-4 h-4 mr-1" />
               Adicionar
@@ -215,7 +343,8 @@ export function IngredientsList({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ingrediente</TableHead>
+                  <TableHead className="w-32">Tipo</TableHead>
+                  <TableHead>Item</TableHead>
                   <TableHead className="w-32">Quantidade</TableHead>
                   <TableHead className="w-32">Unidade</TableHead>
                   <TableHead className="w-32 text-right">Custo</TableHead>
@@ -224,15 +353,33 @@ export function IngredientsList({
               </TableHeader>
               <TableBody>
                 {ingredients.map(ing => {
-                  const stockItem = stockItemsMap.get(ing.stock_item_id);
+                  const isSheet = ing.component_type === 'sheet';
+                  const stockItem = !isSheet && ing.stock_item_id ? stockItemsMap.get(ing.stock_item_id) : undefined;
+                  const linkedSheet = isSheet && ing.linked_sheet_id ? sheetsMap.get(ing.linked_sheet_id) : undefined;
+                  const perKg = linkedSheet && linkedSheet.yield_kg > 0 ? linkedSheet.cvu / linkedSheet.yield_kg : 0;
                   return (
                     <TableRow key={ing.id}>
                       <TableCell>
+                        <Badge variant={isSheet ? 'default' : 'secondary'} className="gap-1">
+                          {isSheet ? <FileText className="w-3 h-3" /> : <Package className="w-3 h-3" />}
+                          {isSheet ? 'Ficha' : 'Insumo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div>
-                          <span className="font-medium">{stockItem?.name || 'Item não encontrado'}</span>
-                          {stockItem && (
+                          <span className="font-medium">
+                            {isSheet
+                              ? linkedSheet?.name || 'Ficha não encontrada'
+                              : stockItem?.name || 'Item não encontrado'}
+                          </span>
+                          {!isSheet && stockItem && (
                             <span className="text-sm text-muted-foreground ml-2">
                               ({formatCurrency(stockItem.value || 0)}/{stockItem.unit})
+                            </span>
+                          )}
+                          {isSheet && linkedSheet && perKg > 0 && (
+                            <span className="text-sm text-muted-foreground ml-2">
+                              ({formatCurrency(perKg)}/kg)
                             </span>
                           )}
                         </div>
