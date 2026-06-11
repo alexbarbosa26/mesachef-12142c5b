@@ -127,7 +127,10 @@ export function TechnicalSheetForm({
 
   // Carrega ingredientes existentes
   useEffect(() => {
-    if (existingIngredients && existingIngredients.length > 0) {
+    // Espera a query carregar (undefined = ainda carregando ou ficha nova sem id)
+    if (!sheet?.id || existingIngredients === undefined) return;
+
+    if (existingIngredients.length > 0) {
       setUseIngredients(true);
       const itemMap = new Map(stockItems.map((s) => [s.id, s]));
       setIngredients(
@@ -154,8 +157,12 @@ export function TechnicalSheetForm({
           };
         })
       );
+    } else {
+      // Ficha sem ingredientes: sincroniza estado local
+      setUseIngredients(false);
+      setIngredients([]);
     }
-  }, [existingIngredients, stockItems, sheetsMap]);
+  }, [existingIngredients, stockItems, sheetsMap, sheet?.id]);
 
   // Calcula CMV baseado nos ingredientes ou valor manual
   const calculatedCmv = useMemo(() => {
@@ -215,17 +222,21 @@ export function TechnicalSheetForm({
       });
 
       // Se usar ingredientes, salva os ingredientes também
-      if (useIngredients && savedSheet) {
+      if (savedSheet) {
+        // Se o toggle está ligado salva os ingredientes; se está desligado limpa qualquer
+        // ingrediente anterior para evitar que reapareçam ao reabrir a ficha.
         await saveIngredients.mutateAsync({
           technicalSheetId: savedSheet.id,
-          ingredients: ingredients.map(ing => ({
-            component_type: ing.component_type,
-            stock_item_id: ing.stock_item_id,
-            linked_sheet_id: ing.linked_sheet_id,
-            quantity: ing.quantity,
-            unit_type: ing.unit_type,
-            calculated_cost: ing.calculated_cost,
-          })),
+          ingredients: useIngredients
+            ? ingredients.map(ing => ({
+                component_type: ing.component_type,
+                stock_item_id: ing.stock_item_id,
+                linked_sheet_id: ing.linked_sheet_id,
+                quantity: ing.quantity,
+                unit_type: ing.unit_type,
+                calculated_cost: ing.calculated_cost,
+              }))
+            : [],
         });
       }
 
