@@ -824,10 +824,12 @@ export type Database = {
         Row: {
           calculated_cost: number
           company_id: string | null
+          component_type: string
           created_at: string
           id: string
+          linked_sheet_id: string | null
           quantity: number
-          stock_item_id: string
+          stock_item_id: string | null
           technical_sheet_id: string
           unit_type: string
           updated_at: string
@@ -835,10 +837,12 @@ export type Database = {
         Insert: {
           calculated_cost?: number
           company_id?: string | null
+          component_type?: string
           created_at?: string
           id?: string
+          linked_sheet_id?: string | null
           quantity?: number
-          stock_item_id: string
+          stock_item_id?: string | null
           technical_sheet_id: string
           unit_type?: string
           updated_at?: string
@@ -846,10 +850,12 @@ export type Database = {
         Update: {
           calculated_cost?: number
           company_id?: string | null
+          component_type?: string
           created_at?: string
           id?: string
+          linked_sheet_id?: string | null
           quantity?: number
-          stock_item_id?: string
+          stock_item_id?: string | null
           technical_sheet_id?: string
           unit_type?: string
           updated_at?: string
@@ -860,6 +866,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technical_sheet_ingredients_linked_sheet_id_fkey"
+            columns: ["linked_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "technical_sheets"
             referencedColumns: ["id"]
           },
           {
