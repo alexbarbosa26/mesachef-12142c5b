@@ -301,28 +301,73 @@ export function useTechnicalSheets() {
         .select(`
           *,
           technical_sheet_ingredients (
+            id,
             quantity,
             unit_type,
+            component_type,
+            stock_item_id,
+            linked_sheet_id,
             stock_items ( value )
           )
         `);
 
       if (error) throw error;
-      // Recalcula o CMV dinamicamente a partir do preço atual dos insumos.
-      // Mantém compatibilidade caso a ficha não use ingredientes (cmv manual).
-      return (data as any[]).map((s) => {
+      // Recalcula o CMV dinamicamente, incluindo fichas técnicas vinculadas (componentes reutilizáveis).
+      const rows = (data as any[]) || [];
+      const byId = new Map<string, any>();
+      rows.forEach((r) => byId.set(r.id, r));
+
+      const cvuOf = (sheetId: string, visiting: Set<string>): number => {
+        const s = byId.get(sheetId);
+        if (!s) return 0;
+        const cmv = cmvOf(sheetId, visiting);
+        const labor =
+          (Number(s.labor_cost_per_hour) || 0) * ((Number(s.prep_time_minutes) || 0) / 60);
+        const pack = Number(s.packaging_cost) || 0;
+        return cmv + labor + pack;
+      };
+
+      const cmvOf = (sheetId: string, visiting: Set<string>): number => {
+        if (visiting.has(sheetId)) return 0; // proteção contra ciclo
+        const s = byId.get(sheetId);
+        if (!s) return 0;
         const ings: any[] = s.technical_sheet_ingredients || [];
-        if (ings.length > 0) {
-          const liveCmv = ings.reduce((sum, ing) => {
+        if (ings.length === 0) return Number(s.cmv) || 0;
+        visiting.add(sheetId);
+        let total = 0;
+        for (const ing of ings) {
+          const u = String(ing.unit_type || '').toLowerCase();
+          let qty = Number(ing.quantity) || 0;
+          const isSheet =
+            ing.component_type === 'sheet' || (!!ing.linked_sheet_id && !ing.stock_item_id);
+          if (isSheet && ing.linked_sheet_id) {
+            const linked = byId.get(ing.linked_sheet_id);
+            const linkedCvu = cvuOf(ing.linked_sheet_id, visiting);
+            if (linked) {
+              const yKg = Number(linked.yield_kg) || 0;
+              const yPort = Number(linked.yield_portions) || 0;
+              if ((u === 'kg' || u === 'g') && yKg > 0) {
+                const q = u === 'g' ? qty / 1000 : qty;
+                total += (linkedCvu * q) / yKg;
+              } else if (u === 'porcao' && yPort > 0) {
+                total += (linkedCvu * qty) / yPort;
+              } else {
+                total += linkedCvu * qty;
+              }
+            }
+          } else {
             const price = Number(ing.stock_items?.value) || 0;
-            let qty = Number(ing.quantity) || 0;
-            const u = String(ing.unit_type || '').toLowerCase();
             if (u === 'g' || u === 'ml') qty = qty / 1000;
-            return sum + price * qty;
-          }, 0);
-          return { ...s, cmv: liveCmv } as TechnicalSheet;
+            total += price * qty;
+          }
         }
-        return s as TechnicalSheet;
+        visiting.delete(sheetId);
+        return total;
+      };
+
+      return rows.map((s) => {
+        const liveCmv = cmvOf(s.id, new Set<string>());
+        return { ...s, cmv: liveCmv } as TechnicalSheet;
       });
     },
     enabled: isAdmin,

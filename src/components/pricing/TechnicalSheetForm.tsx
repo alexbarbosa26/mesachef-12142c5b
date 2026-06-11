@@ -12,6 +12,8 @@ import {
   PricingConfigProduct,
   PricingBasis,
   useUpsertTechnicalSheet,
+  useTechnicalSheets,
+  usePricingProducts,
   calculatePricing,
 } from '@/hooks/usePricingData';
 import { useStockData } from '@/hooks/useStockData';
@@ -22,7 +24,7 @@ import {
   calculateIngredientCost,
 } from '@/hooks/useTechnicalSheetIngredients';
 import { PricingResultCards } from './PricingResultCards';
-import { IngredientsList } from './IngredientsList';
+import { IngredientsList, SheetOption, calculateSheetComponentCost } from './IngredientsList';
 import { ProductConfigSection } from './ProductConfigSection';
 import { FileText, Calculator } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -30,7 +32,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface LocalIngredient {
   id: string;
-  stock_item_id: string;
+  component_type: 'stock' | 'sheet';
+  stock_item_id: string | null;
+  linked_sheet_id: string | null;
   quantity: number;
   unit_type: IngredientUnit;
   calculated_cost: number;
@@ -67,8 +71,34 @@ export function TechnicalSheetForm({
 
   const { stockItems } = useStockData();
   const { data: existingIngredients } = useTechnicalSheetIngredients(sheet?.id);
+  const { data: allSheets = [] } = useTechnicalSheets();
+  const { data: pricingProducts = [] } = usePricingProducts();
   const upsertSheet = useUpsertTechnicalSheet();
   const saveIngredients = useSaveIngredients();
+
+  // Outras fichas técnicas disponíveis como componentes (exclui a atual)
+  const availableSheets: SheetOption[] = useMemo(() => {
+    return allSheets
+      .filter((s) => s.id !== sheet?.id && s.product_id !== productId)
+      .map((s) => {
+        const labor = (Number(s.labor_cost_per_hour) || 0) * (Number(s.prep_time_minutes) || 0) / 60;
+        const cvu = Number(s.cmv || 0) + labor + Number(s.packaging_cost || 0);
+        const prod = pricingProducts.find((p) => p.id === s.product_id);
+        return {
+          id: s.id,
+          name: prod?.name || 'Ficha sem nome',
+          cvu,
+          yield_kg: Number(s.yield_kg) || 0,
+          yield_portions: Number(s.yield_portions) || 0,
+        };
+      });
+  }, [allSheets, pricingProducts, sheet?.id, productId]);
+
+  const sheetsMap = useMemo(() => {
+    const m = new Map<string, SheetOption>();
+    availableSheets.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [availableSheets]);
 
   // Carrega dados existentes da ficha
   useEffect(() => {
@@ -102,23 +132,30 @@ export function TechnicalSheetForm({
       const itemMap = new Map(stockItems.map((s) => [s.id, s]));
       setIngredients(
         existingIngredients.map((ing) => {
-          const stockItem = itemMap.get(ing.stock_item_id);
           const qty = Number(ing.quantity);
-          // Recalcula com o preço ATUAL do insumo (não usa o valor congelado)
-          const liveCost = stockItem
-            ? calculateIngredientCost(stockItem, qty, ing.unit_type as IngredientUnit)
-            : Number(ing.calculated_cost);
+          const unit = ing.unit_type as IngredientUnit;
+          const isSheet = ing.component_type === 'sheet' || (!!ing.linked_sheet_id && !ing.stock_item_id);
+          let liveCost = Number(ing.calculated_cost) || 0;
+          if (isSheet && ing.linked_sheet_id) {
+            const sh = sheetsMap.get(ing.linked_sheet_id);
+            if (sh) liveCost = calculateSheetComponentCost(sh, qty, unit);
+          } else if (ing.stock_item_id) {
+            const stockItem = itemMap.get(ing.stock_item_id);
+            if (stockItem) liveCost = calculateIngredientCost(stockItem, qty, unit);
+          }
           return {
             id: ing.id,
+            component_type: isSheet ? 'sheet' : 'stock',
             stock_item_id: ing.stock_item_id,
+            linked_sheet_id: ing.linked_sheet_id,
             quantity: qty,
-            unit_type: ing.unit_type as IngredientUnit,
+            unit_type: unit,
             calculated_cost: liveCost,
           };
         })
       );
     }
-  }, [existingIngredients, stockItems]);
+  }, [existingIngredients, stockItems, sheetsMap]);
 
   // Calcula CMV baseado nos ingredientes ou valor manual
   const calculatedCmv = useMemo(() => {
@@ -182,7 +219,9 @@ export function TechnicalSheetForm({
         await saveIngredients.mutateAsync({
           technicalSheetId: savedSheet.id,
           ingredients: ingredients.map(ing => ({
+            component_type: ing.component_type,
             stock_item_id: ing.stock_item_id,
+            linked_sheet_id: ing.linked_sheet_id,
             quantity: ing.quantity,
             unit_type: ing.unit_type,
             calculated_cost: ing.calculated_cost,
@@ -228,6 +267,7 @@ export function TechnicalSheetForm({
       {useIngredients && (
         <IngredientsList
           stockItems={stockItems}
+          availableSheets={availableSheets}
           ingredients={ingredients}
           onChange={setIngredients}
         />

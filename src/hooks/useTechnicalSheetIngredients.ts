@@ -5,12 +5,16 @@ import { useAuditLog } from '@/hooks/useAuditLog';
 import { toast } from '@/hooks/use-toast';
 import { StockItem } from '@/hooks/useStockData';
 
-export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'unidade';
+export type IngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'unidade' | 'porcao';
+
+export type IngredientComponentType = 'stock' | 'sheet';
 
 export interface TechnicalSheetIngredient {
   id: string;
   technical_sheet_id: string;
-  stock_item_id: string;
+  stock_item_id: string | null;
+  linked_sheet_id: string | null;
+  component_type: IngredientComponentType;
   quantity: number;
   unit_type: IngredientUnit;
   calculated_cost: number;
@@ -28,6 +32,7 @@ export const INGREDIENT_UNIT_LABELS: Record<IngredientUnit, string> = {
   ml: 'Mililitros (ml)',
   l: 'Litros (l)',
   unidade: 'Unidade',
+  porcao: 'Porção',
 };
 
 export const INGREDIENT_UNIT_SHORT: Record<IngredientUnit, string> = {
@@ -36,6 +41,7 @@ export const INGREDIENT_UNIT_SHORT: Record<IngredientUnit, string> = {
   ml: 'ml',
   l: 'l',
   unidade: 'un',
+  porcao: 'porção',
 };
 
 // Calcula o custo do ingrediente baseado na quantidade e valor unitário do item de estoque
@@ -81,6 +87,7 @@ export function useTechnicalSheetIngredients(technicalSheetId: string | undefine
       return (data || []).map(item => ({
         ...item,
         unit_type: item.unit_type as IngredientUnit,
+        component_type: (item.component_type as IngredientComponentType) || 'stock',
       })) as TechnicalSheetIngredient[];
     },
     enabled: isAdmin && !!technicalSheetId,
@@ -206,7 +213,9 @@ export function useSaveIngredients() {
       if (ingredients.length > 0) {
         const toInsert = ingredients.map(ing => ({
           technical_sheet_id: technicalSheetId,
-          stock_item_id: ing.stock_item_id,
+          stock_item_id: ing.component_type === 'stock' ? ing.stock_item_id : null,
+          linked_sheet_id: ing.component_type === 'sheet' ? ing.linked_sheet_id : null,
+          component_type: ing.component_type,
           quantity: ing.quantity,
           unit_type: ing.unit_type,
           calculated_cost: ing.calculated_cost,
