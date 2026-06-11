@@ -300,7 +300,7 @@ export function useTechnicalSheets() {
         .from('technical_sheets')
         .select(`
           *,
-          technical_sheet_ingredients (
+          technical_sheet_ingredients!technical_sheet_ingredients_technical_sheet_id_fkey (
             id,
             quantity,
             unit_type,
