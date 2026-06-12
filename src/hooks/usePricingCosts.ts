@@ -67,7 +67,7 @@ export function useUpsertFixedCost() {
       }
       const { data, error } = await supabase
         .from('pricing_fixed_costs')
-        .insert({ name: input.name, amount: input.amount, is_active: input.is_active ?? true })
+        .insert({ name: input.name, amount: input.amount, is_active: input.is_active ?? true } as any)
         .select()
         .single();
       if (error) throw error;
@@ -108,7 +108,7 @@ export function useUpsertVariableCost() {
       }
       const { data, error } = await supabase
         .from('pricing_variable_costs')
-        .insert({ name: input.name, percentage: input.percentage, is_active: input.is_active ?? true })
+        .insert({ name: input.name, percentage: input.percentage, is_active: input.is_active ?? true } as any)
         .select()
         .single();
       if (error) throw error;
