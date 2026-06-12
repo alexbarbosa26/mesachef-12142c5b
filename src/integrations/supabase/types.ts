@@ -1115,6 +1115,75 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_config: {
+        Row: {
+          base_url: string | null
+          company_id: string
+          created_at: string
+          enabled: boolean
+          frequency: string
+          id: string
+          include_all_monitored: boolean
+          instance: string | null
+          only_low_stock: boolean
+          recipients: string[]
+          schedule_time: string
+          send_when_healthy: boolean
+          updated_at: string
+        }
+        Insert: {
+          base_url?: string | null
+          company_id: string
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          include_all_monitored?: boolean
+          instance?: string | null
+          only_low_stock?: boolean
+          recipients?: string[]
+          schedule_time?: string
+          send_when_healthy?: boolean
+          updated_at?: string
+        }
+        Update: {
+          base_url?: string | null
+          company_id?: string
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          include_all_monitored?: boolean
+          instance?: string | null
+          only_low_stock?: boolean
+          recipients?: string[]
+          schedule_time?: string
+          send_when_healthy?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_credentials: {
+        Row: {
+          api_key: string
+          company_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          company_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          company_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1141,6 +1210,7 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       is_user_active: { Args: { _user_id: string }; Returns: boolean }
+      whatsapp_has_credentials: { Args: never; Returns: boolean }
     }
     Enums: {
       adjustment_type: "perda" | "quebra" | "erro_operacional"
