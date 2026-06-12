@@ -13,6 +13,7 @@ export interface PricingProduct {
   id: string;
   name: string;
   category: ProductCategory;
+  category_id: string | null;
   sale_unit: SaleUnit;
   is_active: boolean;
   created_by: string | null;
