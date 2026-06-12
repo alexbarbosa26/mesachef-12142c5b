@@ -14,7 +14,7 @@ export default function PricingConfig() {
   return (
     <DashboardLayout>
       <AdminOnlyGuard>
-        <div className="space-y-6 max-w-2xl">
+        <div className="space-y-6 max-w-4xl">
           {/* Header */}
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate('/pricing')}>

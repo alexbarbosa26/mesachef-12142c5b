@@ -46,6 +46,7 @@ export interface PricingConfigGlobal {
   investment_pct: number;
   healthy_margin_threshold: number;
   price_proximity_factor: number;
+  monthly_revenue: number;
   updated_by: string | null;
   updated_at: string;
 }
