@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight, MessageCircle } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -98,6 +98,7 @@ const Sidebar = () => {
         { name: 'Empresas', href: '/companies', icon: Building2, superadminOnly: true },
         { name: 'Usuários', href: '/users', icon: Users, adminOnly: true },
         { name: 'Log de Auditoria', href: '/audit-log', icon: FileText, adminOnly: true },
+        { name: 'WhatsApp', href: '/whatsapp', icon: MessageCircle, adminOnly: true },
         { name: 'Configurações', href: '/settings', icon: Settings, adminOnly: true },
       ],
     },
