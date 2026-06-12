@@ -41,7 +41,7 @@ export function useCreateProductCategory() {
       if (trimmed.length < 1) throw new Error('Nome obrigatório');
       const { data, error } = await supabase
         .from('product_categories')
-        .insert({ name: trimmed })
+        .insert({ name: trimmed } as any)
         .select()
         .single();
       if (error) throw error;
