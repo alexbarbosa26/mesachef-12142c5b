@@ -326,6 +326,7 @@ export type Database = {
       pricing_products: {
         Row: {
           category: Database["public"]["Enums"]["product_category"]
+          category_id: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -337,6 +338,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["product_category"]
+          category_id?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -348,6 +350,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["product_category"]
+          category_id?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -359,7 +362,55 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "pricing_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pricing_products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_categories: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
