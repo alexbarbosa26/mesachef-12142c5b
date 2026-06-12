@@ -227,6 +227,7 @@ export type Database = {
       }
       pricing_config_global: {
         Row: {
+          company_id: string
           fixed_expenses_pct: number
           healthy_margin_threshold: number
           id: string
@@ -238,6 +239,7 @@ export type Database = {
           variable_expenses_pct: number
         }
         Insert: {
+          company_id: string
           fixed_expenses_pct?: number
           healthy_margin_threshold?: number
           id?: string
@@ -249,6 +251,7 @@ export type Database = {
           variable_expenses_pct?: number
         }
         Update: {
+          company_id?: string
           fixed_expenses_pct?: number
           healthy_margin_threshold?: number
           id?: string
@@ -259,7 +262,15 @@ export type Database = {
           updated_by?: string | null
           variable_expenses_pct?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pricing_config_global_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pricing_config_product: {
         Row: {
