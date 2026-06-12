@@ -232,8 +232,6 @@ export type Database = {
           healthy_margin_threshold: number
           id: string
           investment_pct: number
-          monthly_fixed_costs: number
-          monthly_revenue: number
           price_proximity_factor: number
           profit_pct: number
           updated_at: string
@@ -246,8 +244,6 @@ export type Database = {
           healthy_margin_threshold?: number
           id?: string
           investment_pct?: number
-          monthly_fixed_costs?: number
-          monthly_revenue?: number
           price_proximity_factor?: number
           profit_pct?: number
           updated_at?: string
@@ -260,8 +256,6 @@ export type Database = {
           healthy_margin_threshold?: number
           id?: string
           investment_pct?: number
-          monthly_fixed_costs?: number
-          monthly_revenue?: number
           price_proximity_factor?: number
           profit_pct?: number
           updated_at?: string

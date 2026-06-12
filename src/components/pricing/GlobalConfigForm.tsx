@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { PricingConfigGlobal, useUpdatePricingConfigGlobal } from '@/hooks/usePricingData';
-import { Settings, AlertTriangle, Info, Calculator } from 'lucide-react';
+import { Settings, AlertTriangle, Info } from 'lucide-react';
 
 interface GlobalConfigFormProps {
   config: PricingConfigGlobal;
@@ -19,8 +19,6 @@ export function GlobalConfigForm({ config }: GlobalConfigFormProps) {
   const [investment, setInvestment] = useState('5');
   const [healthyMargin, setHealthyMargin] = useState('50');
   const [proximityFactor, setProximityFactor] = useState('1.05');
-  const [monthlyRevenue, setMonthlyRevenue] = useState('0');
-  const [monthlyFixedCosts, setMonthlyFixedCosts] = useState('0');
 
   const updateConfig = useUpdatePricingConfigGlobal();
 
@@ -32,8 +30,6 @@ export function GlobalConfigForm({ config }: GlobalConfigFormProps) {
       setInvestment(config.investment_pct.toString());
       setHealthyMargin(config.healthy_margin_threshold.toString());
       setProximityFactor(config.price_proximity_factor.toString());
-      setMonthlyRevenue((config.monthly_revenue ?? 0).toString());
-      setMonthlyFixedCosts((config.monthly_fixed_costs ?? 0).toString());
     }
   }, [config]);
 
@@ -45,16 +41,6 @@ export function GlobalConfigForm({ config }: GlobalConfigFormProps) {
 
   const hasError = totalPct >= 100;
   const hasWarning = totalPct >= 80 && totalPct < 100;
-
-  const revenueNum = parseFloat(monthlyRevenue) || 0;
-  const fixedCostsNum = parseFloat(monthlyFixedCosts) || 0;
-  const suggestedFixedPct = revenueNum > 0 ? (fixedCostsNum / revenueNum) * 100 : 0;
-
-  const applySuggestedFixedPct = () => {
-    if (revenueNum > 0) {
-      setFixedExpenses(suggestedFixedPct.toFixed(2));
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +55,6 @@ export function GlobalConfigForm({ config }: GlobalConfigFormProps) {
       investment_pct: parseFloat(investment) || 0,
       healthy_margin_threshold: parseFloat(healthyMargin) || 50,
       price_proximity_factor: parseFloat(proximityFactor) || 1.05,
-      monthly_revenue: revenueNum,
-      monthly_fixed_costs: fixedCostsNum,
     });
   };
 
@@ -87,62 +71,6 @@ export function GlobalConfigForm({ config }: GlobalConfigFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Cálculo de DF% a partir de R$ */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <Calculator className="w-4 h-4" />
-              Custos Fixos Mensais (Cálculo Sugerido de DF%)
-            </h4>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="revenue">Faturamento Mensal Previsto (R$)</Label>
-                <Input
-                  id="revenue"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={monthlyRevenue}
-                  onChange={(e) => setMonthlyRevenue(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">Receita estimada do mês</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fixedCosts">Custos Fixos Mensais (R$)</Label>
-                <Input
-                  id="fixedCosts"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={monthlyFixedCosts}
-                  onChange={(e) => setMonthlyFixedCosts(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Aluguel, água, luz, salários, contador
-                </p>
-              </div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted flex items-center justify-between gap-3">
-              <div>
-                <span className="text-sm text-muted-foreground">DF% sugerido: </span>
-                <span className="text-lg font-bold">{suggestedFixedPct.toFixed(2)}%</span>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Custos fixos ÷ faturamento × 100
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={applySuggestedFixedPct}
-                disabled={revenueNum <= 0}
-              >
-                Aplicar em DF%
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
           {/* Percentuais principais */}
           <div className="space-y-4">
             <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">
