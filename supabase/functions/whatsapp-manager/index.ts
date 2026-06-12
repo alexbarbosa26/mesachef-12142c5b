@@ -89,24 +89,35 @@ function buildReport(items: StockItemRow[], companyName: string, includeAll: boo
 }
 
 async function sendViaEvolution(baseUrl: string, instance: string, apiKey: string, number: string, text: string) {
-  const url = `${baseUrl.replace(/\/+$/, "")}/message/sendText/${encodeURIComponent(instance)}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: apiKey,
-    },
-    body: JSON.stringify({
-      number: normalizeNumber(number),
-      text,
-    }),
-  });
-  const body = await res.text();
-  if (!res.ok) {
-    console.error("Evolution error status:", res.status);
-    throw new Error(`Evolution API ${res.status}`);
+  const base = baseUrl.replace(/\/+$/, "");
+  // Evolution GO uses /send/text (instance is identified by the API key, not the URL).
+  // Evolution API (classic) uses /message/sendText/{instance}. Try GO first, fall back to classic.
+  const candidates = [
+    `${base}/send/text`,
+    `${base}/message/sendText/${encodeURIComponent(instance)}`,
+  ];
+  const payload = JSON.stringify({ number: normalizeNumber(number), text });
+  let lastStatus = 0;
+  let lastBody = "";
+  for (const url of candidates) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: apiKey,
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: payload,
+    });
+    const body = await res.text();
+    if (res.ok) return body;
+    lastStatus = res.status;
+    lastBody = body;
+    console.error("Evolution error status:", res.status, "url:", url);
+    // Only fall through to next candidate on 404 (endpoint mismatch)
+    if (res.status !== 404) break;
   }
-  return body;
+  throw new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
 }
 
 serve(async (req) => {
