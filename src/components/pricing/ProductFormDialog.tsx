@@ -21,11 +21,13 @@ import {
   PricingProduct,
   ProductCategory,
   SaleUnit,
-  CATEGORY_LABELS,
   UNIT_LABELS,
   useCreatePricingProduct,
   useUpdatePricingProduct,
 } from '@/hooks/usePricingData';
+import { useProductCategories } from '@/hooks/useProductCategories';
+import { CategoriesManagerDialog } from './CategoriesManagerDialog';
+import { Settings2 } from 'lucide-react';
 
 interface ProductFormDialogProps {
   open: boolean;
@@ -33,40 +35,63 @@ interface ProductFormDialogProps {
   product?: PricingProduct | null;
 }
 
-const CATEGORIES = Object.entries(CATEGORY_LABELS) as [ProductCategory, string][];
 const UNITS = Object.entries(UNIT_LABELS) as [SaleUnit, string][];
+
+// Mapeia o nome da categoria personalizada para o enum legado (back-compat)
+function nameToEnum(name: string | undefined): ProductCategory {
+  const n = (name ?? '').trim().toLowerCase();
+  if (n === 'café' || n === 'cafe') return 'cafe';
+  if (n === 'doce') return 'doce';
+  if (n === 'bolo') return 'bolo';
+  if (n === 'combo') return 'combo';
+  if (n === 'salgado') return 'salgado';
+  if (n === 'bebida') return 'bebida';
+  return 'outro';
+}
 
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<ProductCategory>('outro');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [saleUnit, setSaleUnit] = useState<SaleUnit>('unidade');
   const [isActive, setIsActive] = useState(true);
+  const [showCatManager, setShowCatManager] = useState(false);
 
+  const { data: categories = [] } = useProductCategories({ activeOnly: true });
   const createProduct = useCreatePricingProduct();
   const updateProduct = useUpdatePricingProduct();
 
   useEffect(() => {
     if (product) {
       setName(product.name);
-      setCategory(product.category);
+      setCategoryId(product.category_id ?? '');
       setSaleUnit(product.sale_unit);
       setIsActive(product.is_active);
     } else {
       setName('');
-      setCategory('outro');
+      setCategoryId('');
       setSaleUnit('unidade');
       setIsActive(true);
     }
   }, [product, open]);
 
+  // Pré-seleciona a primeira categoria disponível ao criar
+  useEffect(() => {
+    if (!product && !categoryId && categories.length > 0) {
+      setCategoryId(categories[0].id);
+    }
+  }, [categories, product, categoryId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (name.trim().length < 2) return;
+    if (name.trim().length < 2 || !categoryId) return;
+
+    const selected = categories.find((c) => c.id === categoryId);
 
     const data = {
       name: name.trim(),
-      category,
+      category: nameToEnum(selected?.name),
+      category_id: categoryId,
       sale_unit: saleUnit,
       is_active: isActive,
     };
@@ -105,15 +130,27 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v as ProductCategory)}>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="category">Categoria</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-2 py-1 text-xs"
+                  onClick={() => setShowCatManager(true)}
+                >
+                  <Settings2 className="w-3 h-3 mr-1" />
+                  Gerenciar
+                </Button>
+              </div>
+              <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -146,12 +183,13 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading || name.trim().length < 2}>
+            <Button type="submit" disabled={isLoading || name.trim().length < 2 || !categoryId}>
               {isLoading ? 'Salvando...' : product ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+      <CategoriesManagerDialog open={showCatManager} onOpenChange={setShowCatManager} />
     </Dialog>
   );
 }
