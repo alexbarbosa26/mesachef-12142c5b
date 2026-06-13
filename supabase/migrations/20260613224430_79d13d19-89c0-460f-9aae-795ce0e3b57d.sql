@@ -1,0 +1,2 @@
+ALTER TABLE public.technical_sheet_ingredients DROP CONSTRAINT IF EXISTS technical_sheet_ingredients_unit_type_check;
+ALTER TABLE public.technical_sheet_ingredients ADD CONSTRAINT technical_sheet_ingredients_unit_type_check CHECK (unit_type = ANY (ARRAY['g','kg','ml','l','unidade','porcao']));
