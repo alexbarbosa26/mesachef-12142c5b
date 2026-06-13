@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, MessageCircle, Save, Send, KeyRound, Plus, X, ShieldCheck, AlertCircle } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -23,6 +24,9 @@ interface WhatsAppConfig {
   only_low_stock: boolean;
   include_all_monitored: boolean;
   send_when_healthy: boolean;
+  interval_minutes: number | null;
+  days_of_week: number[];
+  day_of_month: number | null;
 }
 
 const DEFAULT_CONFIG: WhatsAppConfig = {
@@ -35,7 +39,20 @@ const DEFAULT_CONFIG: WhatsAppConfig = {
   only_low_stock: true,
   include_all_monitored: false,
   send_when_healthy: false,
+  interval_minutes: 60,
+  days_of_week: [1, 2, 3, 4, 5],
+  day_of_month: 1,
 };
+
+const WEEKDAYS = [
+  { v: 0, l: 'Dom' },
+  { v: 1, l: 'Seg' },
+  { v: 2, l: 'Ter' },
+  { v: 3, l: 'Qua' },
+  { v: 4, l: 'Qui' },
+  { v: 5, l: 'Sex' },
+  { v: 6, l: 'Sáb' },
+];
 
 export default function WhatsAppConfigPage() {
   const { toast } = useToast();
@@ -75,6 +92,9 @@ export default function WhatsAppConfigPage() {
         only_low_stock: data.only_low_stock,
         include_all_monitored: data.include_all_monitored,
         send_when_healthy: data.send_when_healthy,
+        interval_minutes: data.interval_minutes ?? 60,
+        days_of_week: data.days_of_week ?? [1, 2, 3, 4, 5],
+        day_of_month: data.day_of_month ?? 1,
       });
     }
     const { data: status } = await supabase.functions.invoke('whatsapp-manager', {
@@ -96,6 +116,9 @@ export default function WhatsAppConfigPage() {
       only_low_stock: config.only_low_stock,
       include_all_monitored: config.include_all_monitored,
       send_when_healthy: config.send_when_healthy,
+      interval_minutes: config.frequency === 'interval' ? config.interval_minutes : null,
+      days_of_week: config.frequency === 'weekly' ? config.days_of_week : [],
+      day_of_month: config.frequency === 'monthly' ? config.day_of_month : null,
     };
     let error;
     if (config.id) {
