@@ -161,9 +161,10 @@ async function sendViaEvolution(baseUrl: string, instance: string, apiKey: strin
     if (res.ok) return { body, attempts, response_time_ms: Date.now() - started, status: res.status };
     lastStatus = res.status;
     lastBody = body;
-    console.error("Evolution error status:", res.status, "url:", url);
-    // Only fall through to next candidate on 404 (endpoint mismatch)
-    if (res.status !== 404) break;
+    console.error("Evolution error status:", res.status, "url:", url, "body:", body.slice(0, 200));
+    // Fall through to next candidate on 401/403/404/405 (endpoint or auth-shape mismatch
+    // between Evolution GO `/send/text` and Evolution API classic `/message/sendText/{instance}`).
+    if (![401, 403, 404, 405].includes(res.status)) break;
   }
   const err: Error & { status?: number; attempts?: number; response_time_ms?: number } =
     new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
