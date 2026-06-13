@@ -267,7 +267,7 @@ serve(async (req) => {
     async function loadGlobal(): Promise<GlobalConfigRow | null> {
       const { data } = await adminClient
         .from("whatsapp_global_config")
-        .select("enabled, base_url, instance, api_key, updated_at, updated_by")
+        .select("enabled, base_url, instance, api_key, provider, instance_id, updated_at, updated_by")
         .eq("singleton", true)
         .maybeSingle();
       return (data as GlobalConfigRow | null) ?? null;
@@ -280,6 +280,8 @@ serve(async (req) => {
         enabled: g?.enabled ?? false,
         base_url: g?.base_url ?? "",
         instance: g?.instance ?? "",
+        instance_id: g?.instance_id ?? "",
+        provider: getProvider(g),
         has_api_key: !!g?.api_key,
         updated_at: g?.updated_at ?? null,
       });
@@ -290,11 +292,15 @@ serve(async (req) => {
       const g = body.global ?? {};
       const baseUrl = (g.base_url ?? "").trim() || null;
       const instance = (g.instance ?? "").trim() || null;
+      const instanceId = (g.instance_id ?? "").trim() || null;
+      const provider = g.provider === "evolution_api_v2" ? "evolution_api_v2" : "evolution_go";
       const enabled = !!g.enabled;
       const update: Record<string, unknown> = {
         enabled,
         base_url: baseUrl,
         instance,
+        instance_id: instanceId,
+        provider,
         updated_by: user.id,
         updated_at: new Date().toISOString(),
       };
@@ -325,7 +331,15 @@ serve(async (req) => {
       const text = (body.test_message ?? "").trim() ||
         "✅ Teste global Evolution GO - MesaChef. Integração funcionando!";
       try {
-        const r = await sendViaEvolution(g.base_url, g.instance, g.api_key, testNumber, text);
+        const r = await sendWhatsAppMessage({
+          provider: getProvider(g),
+          baseUrl: g.base_url,
+          instance: g.instance,
+          instanceId: g.instance_id,
+          apiKey: g.api_key,
+          number: testNumber,
+          text,
+        });
         await recordLog(adminClient, {
           company_id: companyId,
           send_type: "test_global",
@@ -345,7 +359,7 @@ serve(async (req) => {
           status: "failure",
           destination_masked: maskNumber(testNumber),
           instance_name: g.instance,
-          error_code: e?.status ? String(e.status) : null,
+          error_code: e?.error_code ?? (e?.status ? String(e.status) : null),
           error_message: String(e?.message ?? "").slice(0, 300),
           attempts: e?.attempts ?? 1,
           response_time_ms: e?.response_time_ms ?? null,
@@ -397,6 +411,8 @@ serve(async (req) => {
     const apiKey = globalCfg.api_key;
     const baseUrl = globalCfg.base_url;
     const instance = globalCfg.instance;
+    const instanceId = globalCfg.instance_id;
+    const provider = getProvider(globalCfg);
 
     if (action === "test_send") {
       const testNumber = (body.test_number ?? "").trim();
@@ -404,7 +420,9 @@ serve(async (req) => {
       const text = (body.test_message ?? "").trim() ||
         "✅ Teste de integração WhatsApp - MesaChef. Tudo funcionando!";
       try {
-        const r = await sendViaEvolution(baseUrl, instance, apiKey, testNumber, text);
+        const r = await sendWhatsAppMessage({
+          provider, baseUrl, instance, instanceId, apiKey, number: testNumber, text,
+        });
         await recordLog(adminClient, {
           company_id: companyId,
           send_type: "test",
@@ -423,7 +441,7 @@ serve(async (req) => {
           status: "failure",
           destination_masked: maskNumber(testNumber),
           instance_name: instance,
-          error_code: e?.status ? String(e.status) : null,
+          error_code: e?.error_code ?? (e?.status ? String(e.status) : null),
           error_message: String(e?.message ?? "").slice(0, 300),
           attempts: e?.attempts ?? 1,
           response_time_ms: e?.response_time_ms ?? null,
@@ -479,7 +497,9 @@ serve(async (req) => {
       const failures: string[] = [];
       for (const number of config.recipients) {
         try {
-          const r = await sendViaEvolution(baseUrl, instance, apiKey, number, finalText);
+          const r = await sendWhatsAppMessage({
+            provider, baseUrl, instance, instanceId, apiKey, number, text: finalText,
+          });
           sent++;
           await recordLog(adminClient, {
             company_id: companyId,
@@ -500,7 +520,7 @@ serve(async (req) => {
             status: "failure",
             destination_masked: maskNumber(number),
             instance_name: instance,
-            error_code: e?.status ? String(e.status) : null,
+            error_code: e?.error_code ?? (e?.status ? String(e.status) : null),
             error_message: String(e?.message ?? "").slice(0, 300),
             attempts: e?.attempts ?? 1,
             response_time_ms: e?.response_time_ms ?? null,
