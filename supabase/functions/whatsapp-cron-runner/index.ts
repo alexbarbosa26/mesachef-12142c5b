@@ -12,8 +12,6 @@ interface StockItemRow {
 interface ConfigRow {
   company_id: string;
   enabled: boolean;
-  base_url: string | null;
-  instance: string | null;
   recipients: string[];
   schedule_time: string | null;
   frequency: string | null;
@@ -199,7 +197,7 @@ serve(async (req) => {
     const { data: cfgs, error: cfgErr } = await admin
       .from("whatsapp_config")
       .select(
-        "company_id, enabled, base_url, instance, recipients, schedule_time, frequency, include_all_monitored, send_when_healthy, last_sent_at, interval_minutes, days_of_week, day_of_month",
+        "company_id, enabled, recipients, schedule_time, frequency, include_all_monitored, send_when_healthy, last_sent_at, interval_minutes, days_of_week, day_of_month",
       )
       .eq("enabled", true);
     if (cfgErr) {
@@ -207,19 +205,43 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "config_query_failed" }), { status: 500 });
     }
 
+    // Load global Evolution GO config once
+    const { data: globalRow } = await admin
+      .from("whatsapp_global_config")
+      .select("enabled, base_url, instance, api_key")
+      .eq("singleton", true)
+      .maybeSingle();
+    const global = globalRow as
+      | { enabled: boolean; base_url: string | null; instance: string | null; api_key: string | null }
+      | null;
+    const globalReady = !!(global?.enabled && global.base_url && global.instance && global.api_key);
+
     const results: Array<Record<string, unknown>> = [];
     for (const c of (cfgs ?? []) as ConfigRow[]) {
-      if (!c.base_url || !c.instance) continue;
       if (!c.recipients || c.recipients.length === 0) continue;
       if (!shouldFire(c)) continue;
 
-      const { data: credRow } = await admin
-        .from("whatsapp_credentials")
-        .select("api_key")
-        .eq("company_id", c.company_id)
-        .maybeSingle();
-      const apiKey = (credRow as { api_key: string } | null)?.api_key;
-      if (!apiKey) continue;
+      if (!globalReady) {
+        await admin.from("whatsapp_send_logs").insert({
+          company_id: c.company_id,
+          send_type: "stock_alert",
+          origin: "schedule",
+          status: "failure",
+          instance_name: global?.instance ?? null,
+          error_code: "GLOBAL_DISABLED",
+          error_message: "Integração global Evolution GO desativada ou incompleta.",
+          attempts: 0,
+        });
+        await admin
+          .from("whatsapp_config")
+          .update({ last_sent_at: new Date().toISOString() })
+          .eq("company_id", c.company_id);
+        results.push({ company_id: c.company_id, skipped: "global_disabled" });
+        continue;
+      }
+      const apiKey = global!.api_key!;
+      const baseUrl = global!.base_url!;
+      const instance = global!.instance!;
 
       const { data: items } = await admin
         .from("stock_items")
@@ -254,7 +276,7 @@ serve(async (req) => {
       let failed = 0;
       for (const number of c.recipients) {
         try {
-          const r = await sendViaEvolution(c.base_url!, c.instance!, apiKey, number, finalText);
+          const r = await sendViaEvolution(baseUrl, instance, apiKey, number, finalText);
           sent++;
           await admin.from("whatsapp_send_logs").insert({
             company_id: c.company_id,
@@ -262,7 +284,7 @@ serve(async (req) => {
             origin: "schedule",
             status: "success",
             destination_masked: maskNumber(number),
-            instance_name: c.instance,
+            instance_name: instance,
             attempts: r.attempts,
             response_time_ms: r.response_time_ms,
           });
@@ -275,7 +297,7 @@ serve(async (req) => {
             origin: "schedule",
             status: "failure",
             destination_masked: maskNumber(number),
-            instance_name: c.instance,
+            instance_name: instance,
             error_code: e?.status ? String(e.status) : null,
             error_message: String(e?.message ?? "").slice(0, 300),
             attempts: e?.attempts ?? 1,
