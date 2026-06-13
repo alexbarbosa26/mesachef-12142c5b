@@ -1222,8 +1222,6 @@ export type Database = {
           enabled: boolean
           id: string
           instance: string | null
-          instance_id: string | null
-          provider: string
           singleton: boolean
           updated_at: string
           updated_by: string | null
@@ -1235,8 +1233,6 @@ export type Database = {
           enabled?: boolean
           id?: string
           instance?: string | null
-          instance_id?: string | null
-          provider?: string
           singleton?: boolean
           updated_at?: string
           updated_by?: string | null
@@ -1248,8 +1244,6 @@ export type Database = {
           enabled?: boolean
           id?: string
           instance?: string | null
-          instance_id?: string | null
-          provider?: string
           singleton?: boolean
           updated_at?: string
           updated_by?: string | null

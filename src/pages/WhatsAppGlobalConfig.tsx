@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, Send, ShieldCheck, AlertCircle, Globe2 } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -18,8 +17,6 @@ interface GlobalCfg {
   enabled: boolean;
   base_url: string;
   instance: string;
-  instance_id: string;
-  provider: 'evolution_go' | 'evolution_api_v2';
   has_api_key: boolean;
   updated_at: string | null;
 }
@@ -33,8 +30,7 @@ export default function WhatsAppGlobalConfigPage() {
   const [apiKey, setApiKey] = useState('');
   const [testNumber, setTestNumber] = useState('');
   const [cfg, setCfg] = useState<GlobalCfg>({
-    enabled: false, base_url: '', instance: '', instance_id: '',
-    provider: 'evolution_go', has_api_key: false, updated_at: null,
+    enabled: false, base_url: '', instance: '', has_api_key: false, updated_at: null,
   });
 
   useEffect(() => { if (isSuperadmin) load(); }, [isSuperadmin]);
@@ -54,8 +50,6 @@ export default function WhatsAppGlobalConfigPage() {
       enabled: !!d.enabled,
       base_url: d.base_url ?? '',
       instance: d.instance ?? '',
-      instance_id: d.instance_id ?? '',
-      provider: d.provider === 'evolution_api_v2' ? 'evolution_api_v2' : 'evolution_go',
       has_api_key: !!d.has_api_key,
       updated_at: d.updated_at ?? null,
     });
@@ -69,8 +63,6 @@ export default function WhatsAppGlobalConfigPage() {
         enabled: cfg.enabled,
         base_url: cfg.base_url.trim(),
         instance: cfg.instance.trim(),
-        instance_id: cfg.instance_id.trim(),
-        provider: cfg.provider,
       },
     };
     if (apiKey.trim()) payload.global.api_key = apiKey.trim();
@@ -160,19 +152,6 @@ export default function WhatsAppGlobalConfigPage() {
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label>Provedor</Label>
-                <Select
-                  value={cfg.provider}
-                  onValueChange={(v) => setCfg((c) => ({ ...c, provider: v as GlobalCfg['provider'] }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="evolution_go">Evolution GO (/send/text)</SelectItem>
-                    <SelectItem value="evolution_api_v2">Evolution API v2 (/message/sendText/{'{instance}'})</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label>URL base</Label>
                 <Input
                   placeholder="https://evolution.exemplo.com"
@@ -181,19 +160,11 @@ export default function WhatsAppGlobalConfigPage() {
                 />
               </div>
               <div>
-                <Label>Instância (nome)</Label>
+                <Label>Instância</Label>
                 <Input
                   placeholder="minha-instancia"
                   value={cfg.instance}
                   onChange={(e) => setCfg((c) => ({ ...c, instance: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>ID da Instância {cfg.provider === 'evolution_go' && <span className="text-xs text-muted-foreground ml-2">(obrigatório no Evolution GO)</span>}</Label>
-                <Input
-                  placeholder="uuid ou id da instância"
-                  value={cfg.instance_id}
-                  onChange={(e) => setCfg((c) => ({ ...c, instance_id: e.target.value }))}
                 />
               </div>
             </div>
