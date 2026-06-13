@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.whatsapp-manager]
 verify_jwt = false
+
+[functions.whatsapp-cron-runner]
+verify_jwt = false
