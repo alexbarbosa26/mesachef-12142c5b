@@ -23,6 +23,7 @@ import {
   ProductCategory,
   CalculatedPricing,
 } from '@/hooks/usePricingData';
+import { useProductCategories } from '@/hooks/useProductCategories';
 import {
   BarChart,
   Bar,
@@ -55,6 +56,7 @@ export default function PricingReports() {
   const { data: sheets, isLoading: sheetsLoading } = useTechnicalSheets();
   const { data: globalConfig, isLoading: configLoading } = usePricingConfigGlobal();
   const { data: productConfigs } = usePricingConfigProducts();
+  const { data: categories } = useProductCategories();
 
   const isLoading = productsLoading || sheetsLoading || configLoading;
 
@@ -64,6 +66,15 @@ export default function PricingReports() {
 
     const sheetsMap = new Map(sheets.map(s => [s.product_id, s]));
     const configsMap = new Map((productConfigs || []).map(c => [c.product_id, c]));
+    const categoryNameById = new Map((categories ?? []).map(c => [c.id, c.name]));
+
+    // Resolve label per product: prefer custom category by id; fallback to legacy enum label.
+    const labelFor = (p: { category_id: string | null; category: ProductCategory }) =>
+      (p.category_id && categoryNameById.get(p.category_id)) ||
+      CATEGORY_LABELS[p.category] ||
+      'Sem categoria';
+    const keyFor = (p: { category_id: string | null; category: ProductCategory }) =>
+      p.category_id ?? `legacy:${p.category}`;
 
     // Produtos com cálculos
     const productsWithPricing = products
@@ -98,23 +109,22 @@ export default function PricingReports() {
       inviavel: productsWithPricing.filter(p => p.pricing?.status === 'inviavel').length,
     };
 
-    // Por categoria
-    const byCategory = Object.entries(CATEGORY_LABELS).map(([key, label]) => {
-      const categoryProducts = productsWithPricing.filter(p => p.category === key);
-      const count = categoryProducts.length;
-      const avgMarginCat = count > 0 
-        ? categoryProducts.reduce((sum, p) => sum + (p.pricing?.contribution_margin_pct || 0), 0) / count 
+    // Por categoria — agrupa por category_id real do tenant (fallback no enum legado).
+    const groups = new Map<string, { label: string; items: typeof productsWithPricing }>();
+    productsWithPricing.forEach(p => {
+      const k = keyFor(p);
+      const entry = groups.get(k) ?? { label: labelFor(p), items: [] };
+      entry.items.push(p);
+      groups.set(k, entry);
+    });
+    const byCategory = Array.from(groups.entries()).map(([key, { label, items }]) => {
+      const count = items.length;
+      const avgMarginCat = count > 0
+        ? items.reduce((sum, p) => sum + (p.pricing?.contribution_margin_pct || 0), 0) / count
         : 0;
-      const totalRevenue = categoryProducts.reduce((sum, p) => sum + (p.pricing?.pv || 0), 0);
-      
-      return {
-        category: key as ProductCategory,
-        label,
-        count,
-        avgMargin: avgMarginCat,
-        totalRevenue,
-      };
-    }).filter(c => c.count > 0);
+      const totalRevenue = items.reduce((sum, p) => sum + (p.pricing?.pv || 0), 0);
+      return { category: key, label, count, avgMargin: avgMarginCat, totalRevenue };
+    }).sort((a, b) => b.count - a.count);
 
     // Ranking de produtos (mais rentáveis)
     const topProfitable = [...productsWithPricing]
@@ -153,12 +163,12 @@ export default function PricingReports() {
       avgProfit,
       statusCounts,
       byCategory,
-      topProfitable,
+      topProfitable: topProfitable.map(p => ({ ...p, _categoryLabel: labelFor(p) })),
       problematicProducts,
       marginChartData,
       statusChartData,
     };
-  }, [products, sheets, globalConfig, productConfigs]);
+  }, [products, sheets, globalConfig, productConfigs, categories]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -389,7 +399,7 @@ export default function PricingReports() {
                                 <div>
                                   <span className="font-medium">{product.name}</span>
                                   <Badge variant="outline" className="ml-2 text-xs">
-                                    {CATEGORY_LABELS[product.category]}
+                                    {(product as any)._categoryLabel ?? CATEGORY_LABELS[product.category]}
                                   </Badge>
                                 </div>
                               </TableCell>
