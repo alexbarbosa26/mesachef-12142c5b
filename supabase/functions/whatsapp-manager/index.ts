@@ -37,6 +37,33 @@ function normalizeNumber(n: string): string {
   return n.replace(/\D/g, "");
 }
 
+function maskNumber(n: string): string {
+  const digits = normalizeNumber(n);
+  if (digits.length <= 4) return "****";
+  return digits.slice(0, 2) + "****" + digits.slice(-2);
+}
+
+type SendLog = {
+  company_id: string;
+  send_type: string;
+  origin: string;
+  status: "success" | "failure";
+  destination_masked?: string | null;
+  instance_name?: string | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  attempts?: number;
+  response_time_ms?: number | null;
+};
+
+async function recordLog(admin: ReturnType<typeof createClient>, entry: SendLog) {
+  try {
+    await admin.from("whatsapp_send_logs").insert(entry);
+  } catch (_e) {
+    // Never let logging break the send pipeline
+  }
+}
+
 function buildReport(items: StockItemRow[], companyName: string, includeAll: boolean): {
   text: string;
   zeroCount: number;
@@ -99,7 +126,10 @@ async function sendViaEvolution(baseUrl: string, instance: string, apiKey: strin
   const payload = JSON.stringify({ number: normalizeNumber(number), text });
   let lastStatus = 0;
   let lastBody = "";
+  let attempts = 0;
+  const started = Date.now();
   for (const url of candidates) {
+    attempts++;
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -110,14 +140,19 @@ async function sendViaEvolution(baseUrl: string, instance: string, apiKey: strin
       body: payload,
     });
     const body = await res.text();
-    if (res.ok) return body;
+    if (res.ok) return { body, attempts, response_time_ms: Date.now() - started, status: res.status };
     lastStatus = res.status;
     lastBody = body;
     console.error("Evolution error status:", res.status, "url:", url);
     // Only fall through to next candidate on 404 (endpoint mismatch)
     if (res.status !== 404) break;
   }
-  throw new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
+  const err: Error & { status?: number; attempts?: number; response_time_ms?: number } =
+    new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
+  err.status = lastStatus;
+  err.attempts = attempts;
+  err.response_time_ms = Date.now() - started;
+  throw err;
 }
 
 serve(async (req) => {
@@ -223,8 +258,30 @@ serve(async (req) => {
       const text = (body.test_message ?? "").trim() ||
         "✅ Teste de integração WhatsApp - MesaChef. Tudo funcionando!";
       try {
-        await sendViaEvolution(config.base_url, config.instance, apiKey, testNumber, text);
-      } catch (e) {
+        const r = await sendViaEvolution(config.base_url, config.instance, apiKey, testNumber, text);
+        await recordLog(adminClient, {
+          company_id: companyId,
+          send_type: "test",
+          origin: "manual",
+          status: "success",
+          destination_masked: maskNumber(testNumber),
+          instance_name: config.instance,
+          attempts: r.attempts,
+          response_time_ms: r.response_time_ms,
+        });
+      } catch (e: any) {
+        await recordLog(adminClient, {
+          company_id: companyId,
+          send_type: "test",
+          origin: "manual",
+          status: "failure",
+          destination_masked: maskNumber(testNumber),
+          instance_name: config.instance,
+          error_code: e?.status ? String(e.status) : null,
+          error_message: String(e?.message ?? "").slice(0, 300),
+          attempts: e?.attempts ?? 1,
+          response_time_ms: e?.response_time_ms ?? null,
+        });
         return json({ error: "Falha ao enviar pelo WhatsApp. Verifique URL, instância e API Key." }, 502);
       }
       return json({ success: true });
@@ -266,10 +323,32 @@ serve(async (req) => {
       const failures: string[] = [];
       for (const number of config.recipients) {
         try {
-          await sendViaEvolution(config.base_url, config.instance, apiKey, number, finalText);
+          const r = await sendViaEvolution(config.base_url, config.instance, apiKey, number, finalText);
           sent++;
-        } catch {
+          await recordLog(adminClient, {
+            company_id: companyId,
+            send_type: hasAlerts ? "stock_alert" : "healthy_report",
+            origin: "manual",
+            status: "success",
+            destination_masked: maskNumber(number),
+            instance_name: config.instance,
+            attempts: r.attempts,
+            response_time_ms: r.response_time_ms,
+          });
+        } catch (e: any) {
           failures.push(number);
+          await recordLog(adminClient, {
+            company_id: companyId,
+            send_type: hasAlerts ? "stock_alert" : "healthy_report",
+            origin: "manual",
+            status: "failure",
+            destination_masked: maskNumber(number),
+            instance_name: config.instance,
+            error_code: e?.status ? String(e.status) : null,
+            error_message: String(e?.message ?? "").slice(0, 300),
+            attempts: e?.attempts ?? 1,
+            response_time_ms: e?.response_time_ms ?? null,
+          });
         }
       }
       return json({
