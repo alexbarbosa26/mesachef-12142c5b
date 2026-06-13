@@ -225,13 +225,14 @@ serve(async (req) => {
     // Load global Evolution GO config once
     const { data: globalRow } = await admin
       .from("whatsapp_global_config")
-      .select("enabled, base_url, instance, api_key")
+      .select("enabled, base_url, instance, instance_id, api_key, provider")
       .eq("singleton", true)
       .maybeSingle();
     const global = globalRow as
-      | { enabled: boolean; base_url: string | null; instance: string | null; api_key: string | null }
+      | { enabled: boolean; base_url: string | null; instance: string | null; instance_id: string | null; api_key: string | null; provider: string | null }
       | null;
     const globalReady = !!(global?.enabled && global.base_url && global.instance && global.api_key);
+    const provider: Provider = global?.provider === "evolution_api_v2" ? "evolution_api_v2" : "evolution_go";
 
     const results: Array<Record<string, unknown>> = [];
     for (const c of (cfgs ?? []) as ConfigRow[]) {
@@ -259,6 +260,7 @@ serve(async (req) => {
       const apiKey = global!.api_key!;
       const baseUrl = global!.base_url!;
       const instance = global!.instance!;
+      const instanceId = global!.instance_id;
 
       const { data: items } = await admin
         .from("stock_items")
@@ -293,7 +295,9 @@ serve(async (req) => {
       let failed = 0;
       for (const number of c.recipients) {
         try {
-          const r = await sendViaEvolution(baseUrl, instance, apiKey, number, finalText);
+          const r = await sendWhatsAppMessage({
+            provider, baseUrl, instance, instanceId, apiKey, number, text: finalText,
+          });
           sent++;
           await admin.from("whatsapp_send_logs").insert({
             company_id: c.company_id,
@@ -315,7 +319,7 @@ serve(async (req) => {
             status: "failure",
             destination_masked: maskNumber(number),
             instance_name: instance,
-            error_code: e?.status ? String(e.status) : null,
+            error_code: e?.error_code ?? (e?.status ? String(e.status) : null),
             error_message: String(e?.message ?? "").slice(0, 300),
             attempts: e?.attempts ?? 1,
             response_time_ms: e?.response_time_ms ?? null,
