@@ -29,6 +29,7 @@ import Companies from "./pages/Companies";
 import SelfService from "./pages/SelfService";
 import WhatsAppConfig from "./pages/WhatsAppConfig";
 import WhatsAppMonitor from "./pages/WhatsAppMonitor";
+import WhatsAppGlobalConfig from "./pages/WhatsAppGlobalConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/self-service" element={<SelfService />} />
             <Route path="/whatsapp" element={<WhatsAppConfig />} />
             <Route path="/whatsapp-monitor" element={<WhatsAppMonitor />} />
+            <Route path="/whatsapp-global" element={<WhatsAppGlobalConfig />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
