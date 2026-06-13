@@ -222,10 +222,6 @@ serve(async (req) => {
           error_message: "Integração global Evolution GO desativada ou incompleta.",
           attempts: 0,
         });
-        await admin
-          .from("whatsapp_config")
-          .update({ last_sent_at: new Date().toISOString() })
-          .eq("company_id", c.company_id);
         results.push({ company_id: c.company_id, skipped: "global_disabled" });
         continue;
       }
@@ -295,10 +291,17 @@ serve(async (req) => {
           });
         }
       }
-      await admin
-        .from("whatsapp_config")
-        .update({ last_sent_at: new Date().toISOString() })
-        .eq("company_id", c.company_id);
+      // Only advance last_sent_at when at least one recipient succeeded, OR
+      // for interval frequency (to maintain cadence). For daily/weekly/monthly,
+      // a full failure leaves last_sent_at untouched so the next cron tick
+      // inside the same window can retry.
+      const freq = (c.frequency ?? "daily").toLowerCase();
+      if (sent > 0 || freq === "interval") {
+        await admin
+          .from("whatsapp_config")
+          .update({ last_sent_at: new Date().toISOString() })
+          .eq("company_id", c.company_id);
+      }
       results.push({ company_id: c.company_id, sent, failed });
     }
 
