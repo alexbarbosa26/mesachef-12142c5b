@@ -1214,6 +1214,42 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_global_config: {
+        Row: {
+          api_key: string | null
+          base_url: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          instance: string | null
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          base_url?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          instance?: string | null
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          base_url?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          instance?: string | null
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       whatsapp_send_logs: {
         Row: {
           attempted_at: string

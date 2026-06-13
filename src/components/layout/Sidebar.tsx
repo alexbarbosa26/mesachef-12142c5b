@@ -99,6 +99,7 @@ const Sidebar = () => {
         { name: 'Usuários', href: '/users', icon: Users, adminOnly: true },
         { name: 'Log de Auditoria', href: '/audit-log', icon: FileText, adminOnly: true },
         { name: 'WhatsApp', href: '/whatsapp', icon: MessageCircle, adminOnly: true },
+        { name: 'Evolution GO (Global)', href: '/whatsapp-global', icon: MessageCircle, superadminOnly: true },
         { name: 'Monitor WhatsApp', href: '/whatsapp-monitor', icon: MessageCircle, superadminOnly: true },
         { name: 'Configurações', href: '/settings', icon: Settings, adminOnly: true },
       ],
