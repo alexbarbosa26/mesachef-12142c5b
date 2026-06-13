@@ -160,16 +160,19 @@ export default function WhatsAppGlobalConfigPage() {
                 />
               </div>
               <div>
-                <Label>Instância</Label>
+                <Label>Instance ID (UUID)</Label>
                 <Input
-                  placeholder="minha-instancia"
+                  placeholder="ex.: 249aad2e-68f9-464f-bc84-aca560c38f0e"
                   value={cfg.instance}
                   onChange={(e) => setCfg((c) => ({ ...c, instance: e.target.value }))}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  UUID da instância no Evolution GO (campo <code>instanceId</code>), retornado ao criar a instância.
+                </p>
               </div>
             </div>
             <div>
-              <Label>API Key {cfg.has_api_key && <span className="text-xs text-muted-foreground ml-2">(já configurada — deixe em branco para manter)</span>}</Label>
+              <Label>API Key (GLOBAL_API_KEY) {cfg.has_api_key && <span className="text-xs text-muted-foreground ml-2">(já configurada — deixe em branco para manter)</span>}</Label>
               <Input
                 type="password"
                 placeholder={cfg.has_api_key ? '••••••••••••' : 'Cole a API Key'}
