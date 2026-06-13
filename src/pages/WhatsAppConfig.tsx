@@ -310,18 +310,118 @@ export default function WhatsAppConfigPage() {
                   />
                 </div>
                 <div>
-                  <Label>Horário do envio diário</Label>
-                  <Input
-                    type="time"
-                    value={config.schedule_time}
-                    onChange={(e) => setConfig((c) => ({ ...c, schedule_time: e.target.value }))}
-                  />
-                </div>
-                <div>
                   <Label>Frequência</Label>
-                  <Input value="Diário" disabled />
+                  <Select
+                    value={config.frequency}
+                    onValueChange={(v) => setConfig((c) => ({ ...c, frequency: v }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="interval">A cada X minutos</SelectItem>
+                      <SelectItem value="hourly">A cada hora</SelectItem>
+                      <SelectItem value="daily">Diariamente</SelectItem>
+                      <SelectItem value="weekly">Semanal (dias da semana)</SelectItem>
+                      <SelectItem value="monthly">Mensal (dia do mês)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {config.frequency === 'interval' && (
+                  <div>
+                    <Label>Intervalo (minutos)</Label>
+                    <Input
+                      type="number"
+                      min={5}
+                      max={10080}
+                      step={5}
+                      value={config.interval_minutes ?? 60}
+                      onChange={(e) =>
+                        setConfig((c) => ({ ...c, interval_minutes: Math.max(5, parseInt(e.target.value || '0')) }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Mínimo 5 minutos. O cron roda a cada 5 min.</p>
+                  </div>
+                )}
+
+                {config.frequency === 'hourly' && (
+                  <div>
+                    <Label>Minuto da hora (00-59)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={parseInt((config.schedule_time || '08:00').split(':')[1] || '0')}
+                      onChange={(e) => {
+                        const m = Math.min(59, Math.max(0, parseInt(e.target.value || '0')));
+                        setConfig((c) => ({ ...c, schedule_time: `00:${String(m).padStart(2, '0')}` }));
+                      }}
+                    />
+                  </div>
+                )}
+
+                {(config.frequency === 'daily' ||
+                  config.frequency === 'weekly' ||
+                  config.frequency === 'monthly') && (
+                  <div>
+                    <Label>Horário do envio</Label>
+                    <Input
+                      type="time"
+                      value={config.schedule_time}
+                      onChange={(e) => setConfig((c) => ({ ...c, schedule_time: e.target.value }))}
+                    />
+                  </div>
+                )}
+
+                {config.frequency === 'monthly' && (
+                  <div>
+                    <Label>Dia do mês (1-31)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={config.day_of_month ?? 1}
+                      onChange={(e) =>
+                        setConfig((c) => ({
+                          ...c,
+                          day_of_month: Math.min(31, Math.max(1, parseInt(e.target.value || '1'))),
+                        }))
+                      }
+                    />
+                  </div>
+                )}
               </div>
+
+              {config.frequency === 'weekly' && (
+                <div className="space-y-2">
+                  <Label>Dias da semana</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKDAYS.map((d) => {
+                      const active = config.days_of_week.includes(d.v);
+                      return (
+                        <button
+                          type="button"
+                          key={d.v}
+                          onClick={() =>
+                            setConfig((c) => ({
+                              ...c,
+                              days_of_week: active
+                                ? c.days_of_week.filter((x) => x !== d.v)
+                                : [...c.days_of_week, d.v].sort(),
+                            }))
+                          }
+                          className={`px-3 py-1.5 rounded-md border text-sm transition ${
+                            active
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background hover:bg-muted'
+                          }`}
+                        >
+                          {d.l}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Números que receberão o alerta</Label>
