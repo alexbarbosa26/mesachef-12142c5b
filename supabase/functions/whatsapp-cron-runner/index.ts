@@ -119,22 +119,73 @@ serve(async (req) => {
     }
 
     // Current time in America/Sao_Paulo
-    const fmt = new Intl.DateTimeFormat("en-GB", {
+    const brParts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "America/Sao_Paulo",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-    const parts = fmt.formatToParts(new Date());
-    const hh = parts.find((p) => p.type === "hour")?.value ?? "00";
-    const mm = parts.find((p) => p.type === "minute")?.value ?? "00";
-    const nowMinutes = parseInt(hh) * 60 + parseInt(mm);
-    const todayBR = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit",
+      year: "numeric", weekday: "short", hour12: false,
+    }).formatToParts(new Date());
+    const pm: Record<string, string> = {};
+    brParts.forEach((p) => (pm[p.type] = p.value));
+    const brHour = parseInt(pm.hour ?? "0");
+    const brMin = parseInt(pm.minute ?? "0");
+    const brDay = parseInt(pm.day ?? "0");
+    const wdMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const brWeekday = wdMap[pm.weekday ?? "Sun"] ?? 0;
+    const nowMinutes = brHour * 60 + brMin;
+    const todayBR = `${pm.year}-${pm.month}-${pm.day}`;
+    const WINDOW = 5; // cron tick window in minutes
+
+    function inTimeWindow(scheduleTime: string | null): boolean {
+      if (!scheduleTime) return false;
+      const [sh, sm] = scheduleTime.split(":");
+      const sched = parseInt(sh) * 60 + parseInt(sm);
+      const diff = nowMinutes - sched;
+      return diff >= 0 && diff < WINDOW;
+    }
+    function alreadySentToday(lastSent: string | null): boolean {
+      if (!lastSent) return false;
+      const lastBR = new Date(lastSent).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      return lastBR === todayBR;
+    }
+    function shouldFire(c: ConfigRow): boolean {
+      const freq = (c.frequency ?? "daily").toLowerCase();
+      if (freq === "interval") {
+        const mins = c.interval_minutes ?? 0;
+        if (mins < 5) return false;
+        if (!c.last_sent_at) return true;
+        return Date.now() - new Date(c.last_sent_at).getTime() >= mins * 60 * 1000;
+      }
+      if (freq === "hourly") {
+        const targetMin = c.schedule_time ? parseInt(c.schedule_time.split(":")[1]) : 0;
+        const diff = brMin - targetMin;
+        if (diff < 0 || diff >= WINDOW) return false;
+        if (c.last_sent_at) {
+          const lastHourKey = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "America/Sao_Paulo",
+            year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false,
+          }).format(new Date(c.last_sent_at));
+          const nowHourKey = `${todayBR}, ${String(brHour).padStart(2, "0")}`;
+          if (lastHourKey === nowHourKey) return false;
+        }
+        return true;
+      }
+      if (freq === "daily") {
+        return inTimeWindow(c.schedule_time) && !alreadySentToday(c.last_sent_at);
+      }
+      if (freq === "weekly") {
+        const days = c.days_of_week ?? [];
+        return days.includes(brWeekday) && inTimeWindow(c.schedule_time) && !alreadySentToday(c.last_sent_at);
+      }
+      if (freq === "monthly") {
+        return c.day_of_month === brDay && inTimeWindow(c.schedule_time) && !alreadySentToday(c.last_sent_at);
+      }
+      return false;
+    }
 
     const { data: cfgs, error: cfgErr } = await admin
       .from("whatsapp_config")
       .select(
-        "company_id, enabled, base_url, instance, recipients, schedule_time, frequency, include_all_monitored, send_when_healthy, last_sent_at",
+        "company_id, enabled, base_url, instance, recipients, schedule_time, frequency, include_all_monitored, send_when_healthy, last_sent_at, interval_minutes, days_of_week, day_of_month",
       )
       .eq("enabled", true);
     if (cfgErr) {
@@ -144,23 +195,9 @@ serve(async (req) => {
 
     const results: Array<Record<string, unknown>> = [];
     for (const c of (cfgs ?? []) as ConfigRow[]) {
-      if (!c.base_url || !c.instance || !c.schedule_time) continue;
-      if ((c.frequency ?? "daily") !== "daily") continue;
+      if (!c.base_url || !c.instance) continue;
       if (!c.recipients || c.recipients.length === 0) continue;
-
-      const [sh, sm] = c.schedule_time.split(":");
-      const schedMinutes = parseInt(sh) * 60 + parseInt(sm);
-      // Only fire if scheduled time is within the past 15 minutes (cron window)
-      const diff = nowMinutes - schedMinutes;
-      if (diff < 0 || diff > 15) continue;
-
-      // Skip if already sent today
-      if (c.last_sent_at) {
-        const lastBR = new Date(c.last_sent_at).toLocaleDateString("en-CA", {
-          timeZone: "America/Sao_Paulo",
-        });
-        if (lastBR === todayBR) continue;
-      }
+      if (!shouldFire(c)) continue;
 
       const { data: credRow } = await admin
         .from("whatsapp_credentials")
