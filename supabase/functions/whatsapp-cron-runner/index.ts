@@ -74,39 +74,56 @@ function buildReport(items: StockItemRow[], companyName: string, includeAll: boo
   return { text: lines.join("\n"), zeroCount: zeroed.length, lowCount: low.length };
 }
 
-async function sendViaEvolution(baseUrl: string, instance: string, apiKey: string, number: string, text: string) {
-  const base = baseUrl.replace(/\/+$/, "");
-  const candidates = [
-    `${base}/send/text`,
-    `${base}/message/sendText/${encodeURIComponent(instance)}`,
-  ];
-  const payload = JSON.stringify({ number: normalizeNumber(number), text });
-  let lastStatus = 0;
-  let lastBody = "";
-  let attempts = 0;
+type Provider = "evolution_go" | "evolution_api_v2";
+
+function diagnoseError(status: number): string {
+  if (status === 401) return "AUTH_INVALID";
+  if (status === 403) return "AUTH_FORBIDDEN";
+  if (status === 404) return "ENDPOINT_NOT_FOUND";
+  if (status === 408 || status === 504) return "TIMEOUT";
+  if (status === 502 || status === 503) return "PROVIDER_UNAVAILABLE";
+  return String(status);
+}
+
+async function sendWhatsAppMessage(args: {
+  provider: Provider;
+  baseUrl: string;
+  instance: string;
+  instanceId: string | null;
+  apiKey: string;
+  number: string;
+  text: string;
+}) {
+  const base = args.baseUrl.replace(/\/+$/, "");
   const started = Date.now();
-  for (const url of candidates) {
-    attempts++;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: apiKey,
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: payload,
+  let url: string;
+  let payload: string;
+  if (args.provider === "evolution_api_v2") {
+    url = `${base}/message/sendText/${encodeURIComponent(args.instance)}`;
+    payload = JSON.stringify({ number: normalizeNumber(args.number), text: args.text });
+  } else {
+    url = `${base}/send/text`;
+    payload = JSON.stringify({
+      id: args.instanceId || args.instance,
+      number: normalizeNumber(args.number),
+      text: args.text,
+      delay: 1000,
     });
-    const body = await res.text();
-    if (res.ok) return { body, attempts, response_time_ms: Date.now() - started, status: res.status };
-    lastStatus = res.status;
-    lastBody = body;
-    if (![401, 403, 404, 405].includes(res.status)) break;
   }
-  const err: Error & { status?: number; attempts?: number; response_time_ms?: number } =
-    new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
-  err.status = lastStatus;
-  err.attempts = attempts;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: args.apiKey },
+    body: payload,
+  });
+  const body = await res.text();
+  if (res.ok) return { body, attempts: 1, response_time_ms: Date.now() - started, status: res.status };
+  const err: Error & {
+    status?: number; attempts?: number; response_time_ms?: number; error_code?: string;
+  } = new Error(`Evolution ${args.provider} ${res.status}: ${body.slice(0, 200)}`);
+  err.status = res.status;
+  err.attempts = 1;
   err.response_time_ms = Date.now() - started;
+  err.error_code = diagnoseError(res.status);
   throw err;
 }
 
@@ -208,13 +225,14 @@ serve(async (req) => {
     // Load global Evolution GO config once
     const { data: globalRow } = await admin
       .from("whatsapp_global_config")
-      .select("enabled, base_url, instance, api_key")
+      .select("enabled, base_url, instance, instance_id, api_key, provider")
       .eq("singleton", true)
       .maybeSingle();
     const global = globalRow as
-      | { enabled: boolean; base_url: string | null; instance: string | null; api_key: string | null }
+      | { enabled: boolean; base_url: string | null; instance: string | null; instance_id: string | null; api_key: string | null; provider: string | null }
       | null;
     const globalReady = !!(global?.enabled && global.base_url && global.instance && global.api_key);
+    const provider: Provider = global?.provider === "evolution_api_v2" ? "evolution_api_v2" : "evolution_go";
 
     const results: Array<Record<string, unknown>> = [];
     for (const c of (cfgs ?? []) as ConfigRow[]) {
@@ -242,6 +260,7 @@ serve(async (req) => {
       const apiKey = global!.api_key!;
       const baseUrl = global!.base_url!;
       const instance = global!.instance!;
+      const instanceId = global!.instance_id;
 
       const { data: items } = await admin
         .from("stock_items")
@@ -276,7 +295,9 @@ serve(async (req) => {
       let failed = 0;
       for (const number of c.recipients) {
         try {
-          const r = await sendViaEvolution(baseUrl, instance, apiKey, number, finalText);
+          const r = await sendWhatsAppMessage({
+            provider, baseUrl, instance, instanceId, apiKey, number, text: finalText,
+          });
           sent++;
           await admin.from("whatsapp_send_logs").insert({
             company_id: c.company_id,
@@ -298,7 +319,7 @@ serve(async (req) => {
             status: "failure",
             destination_masked: maskNumber(number),
             instance_name: instance,
-            error_code: e?.status ? String(e.status) : null,
+            error_code: e?.error_code ?? (e?.status ? String(e.status) : null),
             error_message: String(e?.message ?? "").slice(0, 300),
             attempts: e?.attempts ?? 1,
             response_time_ms: e?.response_time_ms ?? null,
