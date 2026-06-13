@@ -20,6 +20,9 @@ interface ConfigRow {
   include_all_monitored: boolean;
   send_when_healthy: boolean;
   last_sent_at: string | null;
+  interval_minutes: number | null;
+  days_of_week: number[] | null;
+  day_of_month: number | null;
 }
 
 function normalizeNumber(n: string): string {
