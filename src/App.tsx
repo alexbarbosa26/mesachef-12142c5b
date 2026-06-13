@@ -28,6 +28,7 @@ import StockAdjustments from "./pages/StockAdjustments";
 import Companies from "./pages/Companies";
 import SelfService from "./pages/SelfService";
 import WhatsAppConfig from "./pages/WhatsAppConfig";
+import WhatsAppMonitor from "./pages/WhatsAppMonitor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/companies" element={<Companies />} />
             <Route path="/self-service" element={<SelfService />} />
             <Route path="/whatsapp" element={<WhatsAppConfig />} />
+            <Route path="/whatsapp-monitor" element={<WhatsAppMonitor />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
