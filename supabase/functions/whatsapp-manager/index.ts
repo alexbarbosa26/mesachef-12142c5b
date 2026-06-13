@@ -314,7 +314,11 @@ serve(async (req) => {
           attempts: e?.attempts ?? 1,
           response_time_ms: e?.response_time_ms ?? null,
         });
-        return json({ error: "Falha no envio de teste. Verifique URL, instância e API Key." }, 502);
+        return json({
+          error: "Falha no envio de teste. Verifique URL, instância e API Key.",
+          details: String(e?.message ?? "").slice(0, 300),
+          status: e?.status ?? null,
+        }, 502);
       }
     }
 
