@@ -29,6 +29,12 @@ function normalizeNumber(n: string): string {
   return n.replace(/\D/g, "");
 }
 
+function maskNumber(n: string): string {
+  const d = normalizeNumber(n);
+  if (d.length <= 4) return "****";
+  return d.slice(0, 2) + "****" + d.slice(-2);
+}
+
 function buildReport(items: StockItemRow[], companyName: string, includeAll: boolean) {
   const active = items.filter((i) => i.is_active);
   const zeroed = active.filter((i) => Number(i.current_quantity) <= 0);
@@ -79,7 +85,10 @@ async function sendViaEvolution(baseUrl: string, instance: string, apiKey: strin
   const payload = JSON.stringify({ number: normalizeNumber(number), text });
   let lastStatus = 0;
   let lastBody = "";
+  let attempts = 0;
+  const started = Date.now();
   for (const url of candidates) {
+    attempts++;
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -90,12 +99,17 @@ async function sendViaEvolution(baseUrl: string, instance: string, apiKey: strin
       body: payload,
     });
     const body = await res.text();
-    if (res.ok) return body;
+    if (res.ok) return { body, attempts, response_time_ms: Date.now() - started, status: res.status };
     lastStatus = res.status;
     lastBody = body;
     if (res.status !== 404) break;
   }
-  throw new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
+  const err: Error & { status?: number; attempts?: number; response_time_ms?: number } =
+    new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
+  err.status = lastStatus;
+  err.attempts = attempts;
+  err.response_time_ms = Date.now() - started;
+  throw err;
 }
 
 serve(async (req) => {
@@ -240,11 +254,33 @@ serve(async (req) => {
       let failed = 0;
       for (const number of c.recipients) {
         try {
-          await sendViaEvolution(c.base_url, c.instance, apiKey, number, finalText);
+          const r = await sendViaEvolution(c.base_url!, c.instance!, apiKey, number, finalText);
           sent++;
-        } catch (e) {
+          await admin.from("whatsapp_send_logs").insert({
+            company_id: c.company_id,
+            send_type: hasAlerts ? "stock_alert" : "healthy_report",
+            origin: "schedule",
+            status: "success",
+            destination_masked: maskNumber(number),
+            instance_name: c.instance,
+            attempts: r.attempts,
+            response_time_ms: r.response_time_ms,
+          });
+        } catch (e: any) {
           console.error("send failed for company", c.company_id);
           failed++;
+          await admin.from("whatsapp_send_logs").insert({
+            company_id: c.company_id,
+            send_type: hasAlerts ? "stock_alert" : "healthy_report",
+            origin: "schedule",
+            status: "failure",
+            destination_masked: maskNumber(number),
+            instance_name: c.instance,
+            error_code: e?.status ? String(e.status) : null,
+            error_message: String(e?.message ?? "").slice(0, 300),
+            attempts: e?.attempts ?? 1,
+            response_time_ms: e?.response_time_ms ?? null,
+          });
         }
       }
       await admin
