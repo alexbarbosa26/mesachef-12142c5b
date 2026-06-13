@@ -177,6 +177,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_secrets: {
+        Row: {
+          created_at: string
+          name: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          value?: string
+        }
+        Relationships: []
+      }
       custom_columns: {
         Row: {
           column_type: string
@@ -1125,6 +1143,7 @@ export type Database = {
           id: string
           include_all_monitored: boolean
           instance: string | null
+          last_sent_at: string | null
           only_low_stock: boolean
           recipients: string[]
           schedule_time: string
@@ -1140,6 +1159,7 @@ export type Database = {
           id?: string
           include_all_monitored?: boolean
           instance?: string | null
+          last_sent_at?: string | null
           only_low_stock?: boolean
           recipients?: string[]
           schedule_time?: string
@@ -1155,6 +1175,7 @@ export type Database = {
           id?: string
           include_all_monitored?: boolean
           instance?: string | null
+          last_sent_at?: string | null
           only_low_stock?: boolean
           recipients?: string[]
           schedule_time?: string

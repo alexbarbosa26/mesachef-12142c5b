@@ -97,18 +97,23 @@ async function sendViaEvolution(baseUrl: string, instance: string, apiKey: strin
 
 serve(async (req) => {
   try {
-    // Authenticate cron caller via shared secret
-    const cronSecret = Deno.env.get("WHATSAPP_CRON_SECRET");
-    const provided = req.headers.get("x-cron-secret");
-    if (!cronSecret || provided !== cronSecret) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    // Authenticate cron caller via shared secret stored in DB (service-role only)
+    const provided = req.headers.get("x-cron-secret");
+    const { data: secretRow } = await admin
+      .from("cron_secrets")
+      .select("value")
+      .eq("name", "whatsapp_cron")
+      .maybeSingle();
+    const expected = (secretRow as { value: string } | null)?.value;
+    if (!expected || !provided || provided !== expected) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
     // Current time in America/Sao_Paulo
     const fmt = new Intl.DateTimeFormat("en-GB", {
