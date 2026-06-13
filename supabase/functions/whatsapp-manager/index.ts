@@ -19,6 +19,8 @@ interface Body {
     base_url?: string | null;
     instance?: string | null;
     api_key?: string | null; // optional: only updates when provided
+    provider?: "evolution_go" | "evolution_api_v2" | null;
+    instance_id?: string | null;
   };
 }
 
@@ -43,6 +45,8 @@ interface GlobalConfigRow {
   base_url: string | null;
   instance: string | null;
   api_key: string | null;
+  provider: string | null;
+  instance_id: string | null;
   updated_at: string | null;
   updated_by: string | null;
 }
@@ -133,45 +137,77 @@ function buildReport(items: StockItemRow[], companyName: string, includeAll: boo
   return { text: lines.join("\n"), zeroCount: zeroed.length, lowCount: low.length };
 }
 
-async function sendViaEvolution(baseUrl: string, instance: string, apiKey: string, number: string, text: string) {
-  const base = baseUrl.replace(/\/+$/, "");
-  // Evolution GO uses /send/text (instance is identified by the API key, not the URL).
-  // Evolution API (classic) uses /message/sendText/{instance}. Try GO first, fall back to classic.
-  const candidates = [
-    `${base}/send/text`,
-    `${base}/message/sendText/${encodeURIComponent(instance)}`,
-  ];
-  const payload = JSON.stringify({ number: normalizeNumber(number), text });
-  let lastStatus = 0;
-  let lastBody = "";
-  let attempts = 0;
+type Provider = "evolution_go" | "evolution_api_v2";
+
+interface SendArgs {
+  provider: Provider;
+  baseUrl: string;
+  instance: string;
+  instanceId: string | null;
+  apiKey: string;
+  number: string;
+  text: string;
+}
+
+function diagnoseError(status: number): string | null {
+  if (status === 401) return "AUTH_INVALID";
+  if (status === 403) return "AUTH_FORBIDDEN";
+  if (status === 404) return "ENDPOINT_NOT_FOUND";
+  if (status === 408 || status === 504) return "TIMEOUT";
+  if (status === 502 || status === 503) return "PROVIDER_UNAVAILABLE";
+  return null;
+}
+
+async function sendWhatsAppMessage(args: SendArgs) {
+  const base = args.baseUrl.replace(/\/+$/, "");
   const started = Date.now();
-  for (const url of candidates) {
-    attempts++;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: apiKey,
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: payload,
+  let url: string;
+  let payload: string;
+  if (args.provider === "evolution_api_v2") {
+    url = `${base}/message/sendText/${encodeURIComponent(args.instance)}`;
+    payload = JSON.stringify({ number: normalizeNumber(args.number), text: args.text });
+  } else {
+    // evolution_go
+    url = `${base}/send/text`;
+    payload = JSON.stringify({
+      id: args.instanceId || args.instance,
+      number: normalizeNumber(args.number),
+      text: args.text,
+      delay: 1000,
     });
-    const body = await res.text();
-    if (res.ok) return { body, attempts, response_time_ms: Date.now() - started, status: res.status };
-    lastStatus = res.status;
-    lastBody = body;
-    console.error("Evolution error status:", res.status, "url:", url, "body:", body.slice(0, 200));
-    // Fall through to next candidate on 401/403/404/405 (endpoint or auth-shape mismatch
-    // between Evolution GO `/send/text` and Evolution API classic `/message/sendText/{instance}`).
-    if (![401, 403, 404, 405].includes(res.status)) break;
   }
-  const err: Error & { status?: number; attempts?: number; response_time_ms?: number } =
-    new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
-  err.status = lastStatus;
-  err.attempts = attempts;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: args.apiKey },
+    body: payload,
+  });
+  const body = await res.text();
+  if (res.ok) {
+    return { body, attempts: 1, response_time_ms: Date.now() - started, status: res.status };
+  }
+  console.error(
+    `[wa] provider=${args.provider} status=${res.status} endpoint=${url.replace(base, "")}`,
+  );
+  const diag = diagnoseError(res.status);
+  const err: Error & {
+    status?: number;
+    attempts?: number;
+    response_time_ms?: number;
+    error_code?: string;
+    endpoint?: string;
+    provider?: string;
+  } = new Error(`Evolution ${args.provider} ${res.status}: ${body.slice(0, 200)}`);
+  err.status = res.status;
+  err.attempts = 1;
   err.response_time_ms = Date.now() - started;
+  err.error_code = diag ?? String(res.status);
+  err.endpoint = url;
+  err.provider = args.provider;
   throw err;
+}
+
+function getProvider(g: GlobalConfigRow | null): Provider {
+  return (g?.provider === "evolution_api_v2" ? "evolution_api_v2" : "evolution_go");
 }
 
 serve(async (req) => {
