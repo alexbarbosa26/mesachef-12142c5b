@@ -135,42 +135,29 @@ function buildReport(items: StockItemRow[], companyName: string, includeAll: boo
 
 async function sendViaEvolution(baseUrl: string, instance: string, apiKey: string, number: string, text: string) {
   const base = baseUrl.replace(/\/+$/, "");
-  // Evolution GO uses /send/text (instance is identified by the API key, not the URL).
-  // Evolution API (classic) uses /message/sendText/{instance}. Try GO first, fall back to classic.
-  const candidates = [
-    `${base}/send/text`,
-    `${base}/message/sendText/${encodeURIComponent(instance)}`,
-  ];
+  // Evolution GO: POST {base}/send/text with headers apikey (GLOBAL_API_KEY) + instanceId (UUID).
+  // Ref: https://docs.evolutionfoundation.com.br/evolution-go/send-a-text-message
+  const url = `${base}/send/text`;
   const payload = JSON.stringify({ number: normalizeNumber(number), text });
-  let lastStatus = 0;
-  let lastBody = "";
-  let attempts = 0;
   const started = Date.now();
-  for (const url of candidates) {
-    attempts++;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: apiKey,
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: payload,
-    });
-    const body = await res.text();
-    if (res.ok) return { body, attempts, response_time_ms: Date.now() - started, status: res.status };
-    lastStatus = res.status;
-    lastBody = body;
-    console.error("Evolution error status:", res.status, "url:", url, "body:", body.slice(0, 200));
-    // Fall through to next candidate on 401/403/404/405 (endpoint or auth-shape mismatch
-    // between Evolution GO `/send/text` and Evolution API classic `/message/sendText/{instance}`).
-    if (![401, 403, 404, 405].includes(res.status)) break;
-  }
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: apiKey,
+      instanceId: instance,
+    },
+    body: payload,
+  });
+  const body = await res.text();
+  const response_time_ms = Date.now() - started;
+  if (res.ok) return { body, attempts: 1, response_time_ms, status: res.status };
+  console.error("Evolution GO error status:", res.status, "body:", body.slice(0, 200));
   const err: Error & { status?: number; attempts?: number; response_time_ms?: number } =
-    new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
-  err.status = lastStatus;
-  err.attempts = attempts;
-  err.response_time_ms = Date.now() - started;
+    new Error(`Evolution GO ${res.status}: ${body.slice(0, 200)}`);
+  err.status = res.status;
+  err.attempts = 1;
+  err.response_time_ms = response_time_ms;
   throw err;
 }
 
