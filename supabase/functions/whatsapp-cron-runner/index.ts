@@ -100,7 +100,7 @@ async function sendViaEvolution(baseUrl: string, instance: string, apiKey: strin
     if (res.ok) return { body, attempts, response_time_ms: Date.now() - started, status: res.status };
     lastStatus = res.status;
     lastBody = body;
-    if (res.status !== 404) break;
+    if (![401, 403, 404, 405].includes(res.status)) break;
   }
   const err: Error & { status?: number; attempts?: number; response_time_ms?: number } =
     new Error(`Evolution API ${lastStatus}: ${lastBody.slice(0, 200)}`);
