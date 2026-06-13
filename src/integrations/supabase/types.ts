@@ -1138,11 +1138,14 @@ export type Database = {
           base_url: string | null
           company_id: string
           created_at: string
+          day_of_month: number | null
+          days_of_week: number[]
           enabled: boolean
           frequency: string
           id: string
           include_all_monitored: boolean
           instance: string | null
+          interval_minutes: number | null
           last_sent_at: string | null
           only_low_stock: boolean
           recipients: string[]
@@ -1154,11 +1157,14 @@ export type Database = {
           base_url?: string | null
           company_id: string
           created_at?: string
+          day_of_month?: number | null
+          days_of_week?: number[]
           enabled?: boolean
           frequency?: string
           id?: string
           include_all_monitored?: boolean
           instance?: string | null
+          interval_minutes?: number | null
           last_sent_at?: string | null
           only_low_stock?: boolean
           recipients?: string[]
@@ -1170,11 +1176,14 @@ export type Database = {
           base_url?: string | null
           company_id?: string
           created_at?: string
+          day_of_month?: number | null
+          days_of_week?: number[]
           enabled?: boolean
           frequency?: string
           id?: string
           include_all_monitored?: boolean
           instance?: string | null
+          interval_minutes?: number | null
           last_sent_at?: string | null
           only_low_stock?: boolean
           recipients?: string[]
