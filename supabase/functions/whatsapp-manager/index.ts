@@ -2,13 +2,24 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
-type Action = "save_credentials" | "get_status" | "test_send" | "send_report";
+type Action =
+  | "get_status"
+  | "test_send"
+  | "send_report"
+  | "get_global_config"
+  | "save_global_config"
+  | "test_global";
 
 interface Body {
   action: Action;
-  api_key?: string;
   test_number?: string;
   test_message?: string;
+  global?: {
+    enabled?: boolean;
+    base_url?: string | null;
+    instance?: string | null;
+    api_key?: string | null; // optional: only updates when provided
+  };
 }
 
 interface StockItemRow {
@@ -21,12 +32,19 @@ interface StockItemRow {
 
 interface WhatsappConfigRow {
   enabled: boolean;
-  base_url: string | null;
-  instance: string | null;
   recipients: string[];
   only_low_stock: boolean;
   include_all_monitored: boolean;
   send_when_healthy: boolean;
+}
+
+interface GlobalConfigRow {
+  enabled: boolean;
+  base_url: string | null;
+  instance: string | null;
+  api_key: string | null;
+  updated_at: string | null;
+  updated_by: string | null;
 }
 
 function safeErr(_e: unknown): string {
@@ -188,9 +206,9 @@ serve(async (req) => {
       .select("role")
       .eq("user_id", user.id);
     const roles = (rolesData ?? []).map((r: { role: string }) => r.role);
-    if (!roles.includes("admin") && !roles.includes("superadmin")) {
-      return json({ error: "Apenas administradores" }, 403);
-    }
+    const isAdmin = roles.includes("admin") || roles.includes("superadmin");
+    const isSuperadmin = roles.includes("superadmin");
+    if (!isAdmin) return json({ error: "Apenas administradores" }, 403);
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -208,49 +226,136 @@ serve(async (req) => {
     const body = (await req.json()) as Body;
     const action = body.action;
 
-    if (action === "save_credentials") {
-      const apiKey = (body.api_key ?? "").trim();
-      if (apiKey.length < 4 || apiKey.length > 1024) {
-        return json({ error: "API Key inválida" }, 400);
+    // -------- Global config (superadmin only) ----------
+    async function loadGlobal(): Promise<GlobalConfigRow | null> {
+      const { data } = await adminClient
+        .from("whatsapp_global_config")
+        .select("enabled, base_url, instance, api_key, updated_at, updated_by")
+        .eq("singleton", true)
+        .maybeSingle();
+      return (data as GlobalConfigRow | null) ?? null;
+    }
+
+    if (action === "get_global_config") {
+      if (!isSuperadmin) return json({ error: "Apenas superadmin" }, 403);
+      const g = await loadGlobal();
+      return json({
+        enabled: g?.enabled ?? false,
+        base_url: g?.base_url ?? "",
+        instance: g?.instance ?? "",
+        has_api_key: !!g?.api_key,
+        updated_at: g?.updated_at ?? null,
+      });
+    }
+
+    if (action === "save_global_config") {
+      if (!isSuperadmin) return json({ error: "Apenas superadmin" }, 403);
+      const g = body.global ?? {};
+      const baseUrl = (g.base_url ?? "").trim() || null;
+      const instance = (g.instance ?? "").trim() || null;
+      const enabled = !!g.enabled;
+      const update: Record<string, unknown> = {
+        enabled,
+        base_url: baseUrl,
+        instance,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      };
+      if (typeof g.api_key === "string" && g.api_key.trim().length > 0) {
+        if (g.api_key.length > 2048) return json({ error: "API Key inválida" }, 400);
+        update.api_key = g.api_key.trim();
       }
       const { error } = await adminClient
-        .from("whatsapp_credentials")
-        .upsert({ company_id: companyId, api_key: apiKey, updated_at: new Date().toISOString() });
+        .from("whatsapp_global_config")
+        .update(update)
+        .eq("singleton", true)
+        .select();
       if (error) {
-        console.error("save_credentials error");
+        console.error("save_global_config error");
         return json({ error: safeErr(error) }, 500);
       }
       return json({ success: true });
     }
 
+    if (action === "test_global") {
+      if (!isSuperadmin) return json({ error: "Apenas superadmin" }, 403);
+      const g = await loadGlobal();
+      if (!g?.base_url || !g.instance || !g.api_key) {
+        return json({ error: "Configure URL, instância e API Key globais antes de testar." }, 400);
+      }
+      const testNumber = (body.test_number ?? "").trim();
+      if (!testNumber) return json({ error: "Informe um número para teste." }, 400);
+      const text = (body.test_message ?? "").trim() ||
+        "✅ Teste global Evolution GO - MesaChef. Integração funcionando!";
+      try {
+        const r = await sendViaEvolution(g.base_url, g.instance, g.api_key, testNumber, text);
+        await recordLog(adminClient, {
+          company_id: companyId,
+          send_type: "test_global",
+          origin: "system",
+          status: "success",
+          destination_masked: maskNumber(testNumber),
+          instance_name: g.instance,
+          attempts: r.attempts,
+          response_time_ms: r.response_time_ms,
+        });
+        return json({ success: true });
+      } catch (e: any) {
+        await recordLog(adminClient, {
+          company_id: companyId,
+          send_type: "test_global",
+          origin: "system",
+          status: "failure",
+          destination_masked: maskNumber(testNumber),
+          instance_name: g.instance,
+          error_code: e?.status ? String(e.status) : null,
+          error_message: String(e?.message ?? "").slice(0, 300),
+          attempts: e?.attempts ?? 1,
+          response_time_ms: e?.response_time_ms ?? null,
+        });
+        return json({ error: "Falha no envio de teste. Verifique URL, instância e API Key." }, 502);
+      }
+    }
+
     if (action === "get_status") {
-      const { data: cred } = await adminClient
-        .from("whatsapp_credentials")
-        .select("company_id, updated_at")
-        .eq("company_id", companyId)
-        .maybeSingle();
-      return json({ has_credentials: !!cred, updated_at: (cred as any)?.updated_at ?? null });
+      const g = await loadGlobal();
+      return json({
+        global_enabled: !!g?.enabled,
+        global_configured: !!(g?.base_url && g?.instance && g?.api_key),
+        updated_at: g?.updated_at ?? null,
+      });
     }
 
     // For test_send and send_report we need config + credentials
     const { data: cfgData, error: cfgErr } = await adminClient
       .from("whatsapp_config")
-      .select("enabled, base_url, instance, recipients, only_low_stock, include_all_monitored, send_when_healthy")
+      .select("enabled, recipients, only_low_stock, include_all_monitored, send_when_healthy")
       .eq("company_id", companyId)
       .maybeSingle();
     if (cfgErr) return json({ error: safeErr(cfgErr) }, 500);
     const config = cfgData as WhatsappConfigRow | null;
-    if (!config || !config.base_url || !config.instance) {
-      return json({ error: "Configure URL base e instância antes de enviar." }, 400);
+    if (!config) {
+      return json({ error: "Configuração não encontrada para a empresa." }, 400);
     }
 
-    const { data: credRow } = await adminClient
-      .from("whatsapp_credentials")
-      .select("api_key")
-      .eq("company_id", companyId)
-      .maybeSingle();
-    const apiKey = (credRow as { api_key: string } | null)?.api_key;
-    if (!apiKey) return json({ error: "API Key não configurada." }, 400);
+    // Global integration must be enabled and complete
+    const globalCfg = await loadGlobal();
+    if (!globalCfg?.enabled || !globalCfg.base_url || !globalCfg.instance || !globalCfg.api_key) {
+      await recordLog(adminClient, {
+        company_id: companyId,
+        send_type: action === "test_send" ? "test" : "send_report",
+        origin: action === "test_send" ? "manual" : "manual",
+        status: "failure",
+        instance_name: globalCfg?.instance ?? null,
+        error_code: "GLOBAL_DISABLED",
+        error_message: "Integração global Evolution GO desativada ou incompleta.",
+        attempts: 0,
+      });
+      return json({ error: "Integração global Evolution GO indisponível. Contate o superadmin." }, 503);
+    }
+    const apiKey = globalCfg.api_key;
+    const baseUrl = globalCfg.base_url;
+    const instance = globalCfg.instance;
 
     if (action === "test_send") {
       const testNumber = (body.test_number ?? "").trim();
@@ -258,14 +363,14 @@ serve(async (req) => {
       const text = (body.test_message ?? "").trim() ||
         "✅ Teste de integração WhatsApp - MesaChef. Tudo funcionando!";
       try {
-        const r = await sendViaEvolution(config.base_url, config.instance, apiKey, testNumber, text);
+        const r = await sendViaEvolution(baseUrl, instance, apiKey, testNumber, text);
         await recordLog(adminClient, {
           company_id: companyId,
           send_type: "test",
           origin: "manual",
           status: "success",
           destination_masked: maskNumber(testNumber),
-          instance_name: config.instance,
+          instance_name: instance,
           attempts: r.attempts,
           response_time_ms: r.response_time_ms,
         });
@@ -276,19 +381,29 @@ serve(async (req) => {
           origin: "manual",
           status: "failure",
           destination_masked: maskNumber(testNumber),
-          instance_name: config.instance,
+          instance_name: instance,
           error_code: e?.status ? String(e.status) : null,
           error_message: String(e?.message ?? "").slice(0, 300),
           attempts: e?.attempts ?? 1,
           response_time_ms: e?.response_time_ms ?? null,
         });
-        return json({ error: "Falha ao enviar pelo WhatsApp. Verifique URL, instância e API Key." }, 502);
+        return json({ error: "Falha ao enviar pelo WhatsApp." }, 502);
       }
       return json({ success: true });
     }
 
     if (action === "send_report") {
       if (!config.recipients || config.recipients.length === 0) {
+        await recordLog(adminClient, {
+          company_id: companyId,
+          send_type: "send_report",
+          origin: "manual",
+          status: "failure",
+          instance_name: instance,
+          error_code: "NO_RECIPIENTS",
+          error_message: "Nenhum destinatário configurado para a empresa.",
+          attempts: 0,
+        });
         return json({ error: "Nenhum destinatário configurado." }, 400);
       }
       const { data: items, error: itemsErr } = await adminClient
@@ -323,7 +438,7 @@ serve(async (req) => {
       const failures: string[] = [];
       for (const number of config.recipients) {
         try {
-          const r = await sendViaEvolution(config.base_url, config.instance, apiKey, number, finalText);
+          const r = await sendViaEvolution(baseUrl, instance, apiKey, number, finalText);
           sent++;
           await recordLog(adminClient, {
             company_id: companyId,
@@ -331,7 +446,7 @@ serve(async (req) => {
             origin: "manual",
             status: "success",
             destination_masked: maskNumber(number),
-            instance_name: config.instance,
+            instance_name: instance,
             attempts: r.attempts,
             response_time_ms: r.response_time_ms,
           });
@@ -343,7 +458,7 @@ serve(async (req) => {
             origin: "manual",
             status: "failure",
             destination_masked: maskNumber(number),
-            instance_name: config.instance,
+            instance_name: instance,
             error_code: e?.status ? String(e.status) : null,
             error_message: String(e?.message ?? "").slice(0, 300),
             attempts: e?.attempts ?? 1,
