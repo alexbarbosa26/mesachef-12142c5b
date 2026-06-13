@@ -1214,6 +1214,62 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_send_logs: {
+        Row: {
+          attempted_at: string
+          attempts: number
+          company_id: string
+          created_at: string
+          destination_masked: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          instance_name: string | null
+          origin: string
+          response_time_ms: number | null
+          send_type: string
+          status: string
+        }
+        Insert: {
+          attempted_at?: string
+          attempts?: number
+          company_id: string
+          created_at?: string
+          destination_masked?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          instance_name?: string | null
+          origin?: string
+          response_time_ms?: number | null
+          send_type: string
+          status: string
+        }
+        Update: {
+          attempted_at?: string
+          attempts?: number
+          company_id?: string
+          created_at?: string
+          destination_masked?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          instance_name?: string | null
+          origin?: string
+          response_time_ms?: number | null
+          send_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_send_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
