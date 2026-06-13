@@ -10,14 +10,12 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, MessageCircle, Save, Send, KeyRound, Plus, X, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Loader2, MessageCircle, Save, Send, Plus, X, ShieldCheck, AlertCircle } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 
 interface WhatsAppConfig {
   id?: string;
   enabled: boolean;
-  base_url: string;
-  instance: string;
   recipients: string[];
   schedule_time: string;
   frequency: string;
@@ -31,8 +29,6 @@ interface WhatsAppConfig {
 
 const DEFAULT_CONFIG: WhatsAppConfig = {
   enabled: false,
-  base_url: '',
-  instance: '',
   recipients: [],
   schedule_time: '08:00',
   frequency: 'daily',
@@ -59,11 +55,10 @@ export default function WhatsAppConfigPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<WhatsAppConfig>(DEFAULT_CONFIG);
-  const [hasCredentials, setHasCredentials] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [globalEnabled, setGlobalEnabled] = useState(false);
+  const [globalConfigured, setGlobalConfigured] = useState(false);
   const [newRecipient, setNewRecipient] = useState('');
   const [testNumber, setTestNumber] = useState('');
-  const [savingKey, setSavingKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -84,8 +79,6 @@ export default function WhatsAppConfigPage() {
       setConfig({
         id: data.id,
         enabled: data.enabled,
-        base_url: data.base_url ?? '',
-        instance: data.instance ?? '',
         recipients: data.recipients ?? [],
         schedule_time: (data.schedule_time ?? '08:00').slice(0, 5),
         frequency: data.frequency ?? 'daily',
@@ -100,7 +93,8 @@ export default function WhatsAppConfigPage() {
     const { data: status } = await supabase.functions.invoke('whatsapp-manager', {
       body: { action: 'get_status' },
     });
-    setHasCredentials(!!(status as any)?.has_credentials);
+    setGlobalEnabled(!!(status as any)?.global_enabled);
+    setGlobalConfigured(!!(status as any)?.global_configured);
     setLoading(false);
   }
 
@@ -108,8 +102,6 @@ export default function WhatsAppConfigPage() {
     setSaving(true);
     const payload = {
       enabled: config.enabled,
-      base_url: config.base_url.trim() || null,
-      instance: config.instance.trim() || null,
       recipients: config.recipients,
       schedule_time: config.schedule_time,
       frequency: config.frequency,
@@ -142,22 +134,6 @@ export default function WhatsAppConfigPage() {
       return;
     }
     toast({ title: 'Configuração salva' });
-  }
-
-  async function saveApiKey() {
-    if (!apiKey.trim()) return;
-    setSavingKey(true);
-    const { data, error } = await supabase.functions.invoke('whatsapp-manager', {
-      body: { action: 'save_credentials', api_key: apiKey.trim() },
-    });
-    setSavingKey(false);
-    if (error || (data as any)?.error) {
-      toast({ title: 'Erro', description: (data as any)?.error ?? 'Falha ao salvar API Key.', variant: 'destructive' });
-      return;
-    }
-    setApiKey('');
-    setHasCredentials(true);
-    toast({ title: 'API Key salva com segurança' });
   }
 
   async function testSend() {
@@ -230,7 +206,7 @@ export default function WhatsAppConfigPage() {
             <div>
               <h1 className="text-2xl font-bold">WhatsApp - Alertas de Estoque</h1>
               <p className="text-sm text-muted-foreground">
-                Integração com Evolution GO para envio de relatórios de estoque.
+                Preferências de envio dos alertas. A integração Evolution GO é gerenciada globalmente pelo superadmin.
               </p>
             </div>
           </div>
@@ -238,41 +214,31 @@ export default function WhatsAppConfigPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <KeyRound className="w-5 h-5" /> Credenciais Evolution GO
+                <ShieldCheck className="w-5 h-5" /> Integração Evolution GO
               </CardTitle>
               <CardDescription>
-                A API Key é armazenada de forma segura no servidor e nunca exposta no navegador.
+                URL, instância e API Key são configuradas pelo superadmin e usadas por todas as empresas.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex items-center gap-2">
-                {hasCredentials ? (
+                {globalEnabled && globalConfigured ? (
                   <Badge variant="default" className="gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> API Key configurada
+                    <ShieldCheck className="w-3.5 h-3.5" /> Integração ativa
+                  </Badge>
+                ) : globalConfigured ? (
+                  <Badge variant="secondary" className="gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" /> Configurada mas desativada
                   </Badge>
                 ) : (
                   <Badge variant="destructive" className="gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" /> Nenhuma API Key configurada
+                    <AlertCircle className="w-3.5 h-3.5" /> Não configurada pelo superadmin
                   </Badge>
                 )}
               </div>
-              <div className="grid gap-2">
-                <Label>Nova API Key</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="password"
-                    placeholder="Cole a API Key da Evolution GO"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                  <Button onClick={saveApiKey} disabled={savingKey || !apiKey.trim()}>
-                    {savingKey ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Salvar uma nova chave substitui a anterior.
-                </p>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Suas preferências abaixo (destinatários, horários, frequência) só serão enviadas quando a integração global estiver ativa.
+              </p>
             </CardContent>
           </Card>
 
@@ -293,22 +259,6 @@ export default function WhatsAppConfigPage() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label>URL base da Evolution GO</Label>
-                  <Input
-                    placeholder="https://api.suaevolution.com"
-                    value={config.base_url}
-                    onChange={(e) => setConfig((c) => ({ ...c, base_url: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label>Instância</Label>
-                  <Input
-                    placeholder="minha-instancia"
-                    value={config.instance}
-                    onChange={(e) => setConfig((c) => ({ ...c, instance: e.target.value }))}
-                  />
-                </div>
                 <div>
                   <Label>Frequência</Label>
                   <Select
@@ -505,7 +455,7 @@ export default function WhatsAppConfigPage() {
             <CardHeader>
               <CardTitle>Testes e envio manual</CardTitle>
               <CardDescription>
-                Requer URL base, instância e API Key configurados.
+                Requer que o superadmin tenha ativado a integração global da Evolution GO.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -518,7 +468,7 @@ export default function WhatsAppConfigPage() {
                     onChange={(e) => setTestNumber(e.target.value)}
                   />
                 </div>
-                <Button onClick={testSend} disabled={testing || !hasCredentials} variant="outline">
+                <Button onClick={testSend} disabled={testing || !globalEnabled || !globalConfigured} variant="outline">
                   {testing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                   Enviar teste
                 </Button>
@@ -527,7 +477,7 @@ export default function WhatsAppConfigPage() {
                 <p className="text-sm text-muted-foreground mb-2">
                   Gerar relatório de estoque agora e enviar para todos os destinatários cadastrados.
                 </p>
-                <Button onClick={sendNow} disabled={sending || !hasCredentials || config.recipients.length === 0}>
+                <Button onClick={sendNow} disabled={sending || !globalEnabled || !globalConfigured || config.recipients.length === 0}>
                   {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                   Enviar relatório agora
                 </Button>
