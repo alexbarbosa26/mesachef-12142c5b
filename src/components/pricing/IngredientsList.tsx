@@ -93,8 +93,10 @@ export function IngredientsList({
   disabled = false,
 }: IngredientsListProps) {
   const [componentType, setComponentType] = useState<'stock' | 'sheet'>('stock');
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
-  const [selectedSheetId, setSelectedSheetId] = useState<string>('');
+  const [stockOpen, setStockOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [stockSearch, setStockSearch] = useState('');
+  const [sheetSearch, setSheetSearch] = useState('');
   const [quantity, setQuantity] = useState<string>('');
   const [unitType, setUnitType] = useState<IngredientUnit>('g');
 
