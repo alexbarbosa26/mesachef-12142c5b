@@ -302,7 +302,7 @@ export function IngredientsList({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
+                    <Command shouldFilter={false}>
                       <CommandInput
                         placeholder="Buscar insumo..."
                         value={stockSearch}
@@ -354,7 +354,7 @@ export function IngredientsList({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
+                    <Command shouldFilter={false}>
                       <CommandInput
                         placeholder="Buscar ficha técnica..."
                         value={sheetSearch}
