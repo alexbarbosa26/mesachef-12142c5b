@@ -10,6 +10,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Table,
   TableBody,
   TableCell,
@@ -18,7 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Package, FileText } from 'lucide-react';
+import { Plus, Trash2, Package, FileText, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StockItem } from '@/hooks/useStockData';
 import {
@@ -27,6 +39,7 @@ import {
   INGREDIENT_UNIT_SHORT,
   calculateIngredientCost,
 } from '@/hooks/useTechnicalSheetIngredients';
+import { cn } from '@/lib/utils';
 
 export interface SheetOption {
   id: string;
@@ -80,8 +93,12 @@ export function IngredientsList({
   disabled = false,
 }: IngredientsListProps) {
   const [componentType, setComponentType] = useState<'stock' | 'sheet'>('stock');
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [selectedStockId, setSelectedStockId] = useState<string>('');
   const [selectedSheetId, setSelectedSheetId] = useState<string>('');
+  const [stockOpen, setStockOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [stockSearch, setStockSearch] = useState('');
+  const [sheetSearch, setSheetSearch] = useState('');
   const [quantity, setQuantity] = useState<string>('');
   const [unitType, setUnitType] = useState<IngredientUnit>('g');
 
@@ -109,6 +126,19 @@ export function IngredientsList({
     return availableSheets.filter(s => !addedIds.has(s.id));
   }, [availableSheets, ingredients]);
 
+  // Filtros de busca
+  const filteredItems = useMemo(() => {
+    if (!stockSearch.trim()) return availableItems;
+    const term = stockSearch.toLowerCase();
+    return availableItems.filter(item => item.name.toLowerCase().includes(term));
+  }, [availableItems, stockSearch]);
+
+  const filteredSheets = useMemo(() => {
+    if (!sheetSearch.trim()) return availableSheetOptions;
+    const term = sheetSearch.toLowerCase();
+    return availableSheetOptions.filter(s => s.name.toLowerCase().includes(term));
+  }, [availableSheetOptions, sheetSearch]);
+
   // Custo total dos ingredientes (CMV calculado)
   const totalCMV = useMemo(() => {
     return ingredients.reduce((sum, ing) => sum + ing.calculated_cost, 0);
@@ -119,8 +149,8 @@ export function IngredientsList({
     if (!qty || qty <= 0) return;
 
     if (componentType === 'stock') {
-      if (!selectedItemId) return;
-      const stockItem = stockItemsMap.get(selectedItemId);
+      if (!selectedStockId) return;
+      const stockItem = stockItemsMap.get(selectedStockId);
       if (!stockItem) return;
       const cost = calculateIngredientCost(stockItem, qty, unitType);
       onChange([
@@ -128,7 +158,7 @@ export function IngredientsList({
         {
           id: `temp-${Date.now()}`,
           component_type: 'stock',
-          stock_item_id: selectedItemId,
+          stock_item_id: selectedStockId,
           linked_sheet_id: null,
           quantity: qty,
           unit_type: unitType,
@@ -154,8 +184,10 @@ export function IngredientsList({
       ]);
     }
 
-    setSelectedItemId('');
+    setSelectedStockId('');
     setSelectedSheetId('');
+    setStockSearch('');
+    setSheetSearch('');
     setQuantity('');
     setUnitType(componentType === 'sheet' ? 'kg' : 'g');
   };
@@ -209,6 +241,9 @@ export function IngredientsList({
     }).format(value);
   };
 
+  const selectedStockItem = selectedStockId ? stockItemsMap.get(selectedStockId) : undefined;
+  const selectedSheetItem = selectedSheetId ? sheetsMap.get(selectedSheetId) : undefined;
+
   return (
     <Card>
       <CardHeader>
@@ -230,8 +265,10 @@ export function IngredientsList({
                 value={componentType}
                 onValueChange={(v) => {
                   setComponentType(v as 'stock' | 'sheet');
-                  setSelectedItemId('');
+                  setSelectedStockId('');
                   setSelectedSheetId('');
+                  setStockSearch('');
+                  setSheetSearch('');
                   setUnitType(v === 'sheet' ? 'kg' : 'g');
                 }}
               >
@@ -250,46 +287,114 @@ export function IngredientsList({
                 {componentType === 'stock' ? 'Insumo' : 'Ficha técnica'}
               </Label>
               {componentType === 'stock' ? (
-                <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                  <SelectTrigger id="ingredient-select">
-                    <SelectValue placeholder="Selecione um insumo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableItems.length === 0 ? (
-                      <SelectItem value="_empty" disabled>
-                        Todos os insumos já foram adicionados
-                      </SelectItem>
-                    ) : (
-                      availableItems.map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name} ({item.unit}) - {formatCurrency(item.value || 0)}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <Popover open={stockOpen} onOpenChange={setStockOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={stockOpen}
+                      className="w-full justify-between"
+                    >
+                      {selectedStockItem
+                        ? `${selectedStockItem.name} (${selectedStockItem.unit})`
+                        : 'Selecione um insumo...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Buscar insumo..."
+                        value={stockSearch}
+                        onValueChange={setStockSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          {availableItems.length === 0
+                            ? 'Todos os insumos já foram adicionados'
+                            : 'Nenhum insumo encontrado'}
+                        </CommandEmpty>
+                        {filteredItems.map(item => (
+                          <CommandItem
+                            key={item.id}
+                            value={item.id}
+                            onSelect={() => {
+                              setSelectedStockId(item.id);
+                              setStockOpen(false);
+                              setStockSearch('');
+                            }}
+                            className={cn(
+                              selectedStockId === item.id && 'bg-accent text-accent-foreground'
+                            )}
+                          >
+                            <Package className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                            <span className="flex-1">{item.name}</span>
+                            <span className="ml-2 text-muted-foreground text-xs">
+                              {item.unit} — {formatCurrency(item.value || 0)}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               ) : (
-                <Select value={selectedSheetId} onValueChange={setSelectedSheetId}>
-                  <SelectTrigger id="ingredient-select">
-                    <SelectValue placeholder="Selecione uma ficha técnica" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSheetOptions.length === 0 ? (
-                      <SelectItem value="_empty" disabled>
-                        Nenhuma ficha técnica disponível
-                      </SelectItem>
-                    ) : (
-                      availableSheetOptions.map(s => {
-                        const perKg = s.yield_kg > 0 ? s.cvu / s.yield_kg : 0;
-                        return (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name} {perKg > 0 ? `- ${formatCurrency(perKg)}/kg` : ''}
-                          </SelectItem>
-                        );
-                      })
-                    )}
-                  </SelectContent>
-                </Select>
+                <Popover open={sheetOpen} onOpenChange={setSheetOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={sheetOpen}
+                      className="w-full justify-between"
+                    >
+                      {selectedSheetItem
+                        ? selectedSheetItem.name
+                        : 'Selecione uma ficha técnica...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Buscar ficha técnica..."
+                        value={sheetSearch}
+                        onValueChange={setSheetSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          {availableSheetOptions.length === 0
+                            ? 'Nenhuma ficha técnica disponível'
+                            : 'Nenhuma ficha encontrada'}
+                        </CommandEmpty>
+                        {filteredSheets.map(s => {
+                          const perKg = s.yield_kg > 0 ? s.cvu / s.yield_kg : 0;
+                          return (
+                            <CommandItem
+                              key={s.id}
+                              value={s.id}
+                              onSelect={() => {
+                                setSelectedSheetId(s.id);
+                                setSheetOpen(false);
+                                setSheetSearch('');
+                              }}
+                              className={cn(
+                                selectedSheetId === s.id && 'bg-accent text-accent-foreground'
+                              )}
+                            >
+                              <FileText className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                              <span className="flex-1">{s.name}</span>
+                              {perKg > 0 && (
+                                <span className="ml-2 text-muted-foreground text-xs">
+                                  {formatCurrency(perKg)}/kg
+                                </span>
+                              )}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
 
@@ -326,7 +431,7 @@ export function IngredientsList({
               type="button"
               onClick={handleAddIngredient}
               disabled={
-                (componentType === 'stock' ? !selectedItemId : !selectedSheetId) ||
+                (componentType === 'stock' ? !selectedStockId : !selectedSheetId) ||
                 !quantity ||
                 parseFloat(quantity) <= 0
               }
