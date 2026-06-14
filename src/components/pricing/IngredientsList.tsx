@@ -10,6 +10,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Table,
   TableBody,
   TableCell,
@@ -18,7 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Package, FileText } from 'lucide-react';
+import { Plus, Trash2, Package, FileText, ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StockItem } from '@/hooks/useStockData';
 import {
@@ -27,6 +39,7 @@ import {
   INGREDIENT_UNIT_SHORT,
   calculateIngredientCost,
 } from '@/hooks/useTechnicalSheetIngredients';
+import { cn } from '@/lib/utils';
 
 export interface SheetOption {
   id: string;
