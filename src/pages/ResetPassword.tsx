@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
-import logo from '@/assets/logo.png';
+import logoAsset from '@/assets/logo-mesachef.png.asset.json';
 import { supabase } from '@/integrations/supabase/client';
 
 const passwordSchema = z.object({
@@ -93,7 +93,7 @@ const ResetPassword = () => {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md animate-scale-in">
           <CardHeader className="text-center space-y-4">
-            <img src={logo} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
+            <img src={logoAsset.url} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
             <div>
               <CardTitle className="text-2xl font-bold text-destructive">Link Inválido</CardTitle>
               <CardDescription className="mt-2">{sessionError}</CardDescription>
@@ -114,7 +114,7 @@ const ResetPassword = () => {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md animate-scale-in">
           <CardHeader className="text-center space-y-4">
-            <img src={logo} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
+            <img src={logoAsset.url} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
             <div>
               <CardTitle className="text-2xl font-bold">Validando Link...</CardTitle>
               <CardDescription className="mt-2">Aguarde enquanto validamos seu link</CardDescription>
@@ -244,7 +244,7 @@ const ResetPassword = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md animate-scale-in">
         <CardHeader className="text-center space-y-4">
-          <img src={logo} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
+          <img src={logoAsset.url} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
           <div>
             <CardTitle className="text-2xl font-bold">Nova Senha</CardTitle>
             <CardDescription className="mt-2">

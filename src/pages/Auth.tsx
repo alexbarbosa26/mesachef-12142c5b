@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { z } from 'zod';
-import logo from '@/assets/logo.png';
+import logoAsset from '@/assets/logo-mesachef.png.asset.json';
 import { supabase } from '@/integrations/supabase/client';
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -187,7 +187,7 @@ const Auth = () => {
     return <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md animate-scale-in">
         <CardHeader className="text-center space-y-4">
-            <img alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" src={logo} />
+            <img alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" src={logoAsset.url} />
             <div>
               <CardTitle className="text-2xl font-bold">MesaChef</CardTitle>
               <CardDescription className="mt-2">
@@ -230,7 +230,7 @@ const Auth = () => {
   return <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md animate-scale-in">
         <CardHeader className="text-center space-y-4">
-          <img src={logo} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
+          <img src={logoAsset.url} alt="MesaChef Logo" className="mx-auto w-24 h-24 object-contain" />
           <div>
             <CardTitle className="text-2xl font-bold">Recuperar Senha</CardTitle>
             <CardDescription className="mt-2">

@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight, MessageCircle } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logoAsset from '@/assets/logo-mesachef.png.asset.json';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -143,7 +143,7 @@ const Sidebar = () => {
   const NavContent = ({ collapsed = false }: { collapsed?: boolean }) => <>
       <div className={cn("p-6", collapsed && "p-3 flex justify-center")}>
         <div className={cn("flex items-center gap-3", collapsed && "gap-0")}>
-          <img alt="MesaChef Logo" className={cn("object-contain", collapsed ? "w-9 h-9" : "w-12 h-12")} src={logo} />
+          <img alt="MesaChef Logo" className={cn("object-contain", collapsed ? "w-9 h-9" : "w-12 h-12")} src={logoAsset.url} />
           {!collapsed && (
             <div>
               <h1 className="font-bold text-sidebar-foreground">MesaChef</h1>
@@ -321,7 +321,7 @@ const Sidebar = () => {
             <Menu className="w-6 h-6" />
           </Button>
           <div className="flex items-center gap-2 ml-3">
-            <img src={logo} alt="MesaChef Logo" className="w-8 h-8 object-contain" />
+            <img src={logoAsset.url} alt="MesaChef Logo" className="w-8 h-8 object-contain" />
             <span className="font-semibold text-foreground">MesaChef</span>
           </div>
         </div>
