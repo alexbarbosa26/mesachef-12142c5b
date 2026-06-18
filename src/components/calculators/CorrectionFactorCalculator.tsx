@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,7 +77,7 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
   }, [grossWeight, grossUnit, mode, lossWeight, lossUnit, netWeight, netUnit, totalCost]);
 
   // Propagate result up for cross-calculator use
-  useMemo(() => {
+  useEffect(() => {
     if (result && result.costPerKgNet > 0) {
       onResultChange?.({ costPerKgNet: result.costPerKgNet, foodName });
     } else {
