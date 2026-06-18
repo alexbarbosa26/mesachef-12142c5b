@@ -116,7 +116,6 @@ export function computeCooking(input: {
   const beforeG = toGrams(input.beforeWeight, input.beforeUnit);
   const afterG = toGrams(input.afterWeight, input.afterUnit);
   if (!beforeG || beforeG <= 0 || !afterG || afterG <= 0) return null;
-  if (afterG > beforeG) return null;
 
   const costPerKgBefore = input.costPerKgBefore || 0;
   const costPerGBefore = costPerKgBefore / 1000;
