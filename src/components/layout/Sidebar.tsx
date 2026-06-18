@@ -72,6 +72,7 @@ const Sidebar = () => {
         { name: 'Valoração', href: '/stock-valuation', icon: DollarSign, adminOnly: true },
         { name: 'Compras', href: '/stock-purchases', icon: ShoppingCart, adminOnly: true },
         { name: 'Ajustes de Estoque', href: '/stock-adjustments', icon: Wrench, adminOnly: true },
+        { name: 'Calculadoras', href: '/calculators', icon: Calculator, adminOnly: false },
       ],
     },
     {

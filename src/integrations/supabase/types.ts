@@ -508,6 +508,103 @@ export type Database = {
           },
         ]
       }
+      production_calculations: {
+        Row: {
+          action_taken: string
+          calculation_type: string
+          company_id: string
+          cooking_factor: number | null
+          correction_factor: number | null
+          cost_per_g_net: number | null
+          cost_per_kg_gross: number | null
+          cost_per_kg_net: number | null
+          created_at: string
+          created_by: string | null
+          food_name: string
+          gross_weight_g: number | null
+          id: string
+          linked_item_id: string | null
+          loss_g: number | null
+          loss_pct: number | null
+          net_weight_g: number | null
+          notes: string | null
+          source_calculation_id: string | null
+          total_cost: number | null
+          updated_at: string
+          yield_pct: number | null
+        }
+        Insert: {
+          action_taken?: string
+          calculation_type: string
+          company_id: string
+          cooking_factor?: number | null
+          correction_factor?: number | null
+          cost_per_g_net?: number | null
+          cost_per_kg_gross?: number | null
+          cost_per_kg_net?: number | null
+          created_at?: string
+          created_by?: string | null
+          food_name: string
+          gross_weight_g?: number | null
+          id?: string
+          linked_item_id?: string | null
+          loss_g?: number | null
+          loss_pct?: number | null
+          net_weight_g?: number | null
+          notes?: string | null
+          source_calculation_id?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          yield_pct?: number | null
+        }
+        Update: {
+          action_taken?: string
+          calculation_type?: string
+          company_id?: string
+          cooking_factor?: number | null
+          correction_factor?: number | null
+          cost_per_g_net?: number | null
+          cost_per_kg_gross?: number | null
+          cost_per_kg_net?: number | null
+          created_at?: string
+          created_by?: string | null
+          food_name?: string
+          gross_weight_g?: number | null
+          id?: string
+          linked_item_id?: string | null
+          loss_g?: number | null
+          loss_pct?: number | null
+          net_weight_g?: number | null
+          notes?: string | null
+          source_calculation_id?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          yield_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_calculations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_calculations_linked_item_id_fkey"
+            columns: ["linked_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_calculations_source_calculation_id_fkey"
+            columns: ["source_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "production_calculations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_id: string | null
