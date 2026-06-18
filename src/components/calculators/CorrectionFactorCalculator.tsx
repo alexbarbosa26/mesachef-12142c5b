@@ -126,7 +126,7 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
       <CardContent className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Label htmlFor="cf-name" className="flex items-center gap-1.5">
+            <Label htmlFor="cf-name" className="flex items-center gap-1.5 mb-1.5">
               Nome do alimento
               <FieldHelp text="Nome do insumo bruto que será limpo/processado (ex.: Salmão inteiro, Tomate, Alface)." />
             </Label>
@@ -140,7 +140,7 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <Label className="flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5 mb-1.5">
                 Peso bruto
                 <FieldHelp text="Peso total do alimento como comprado, antes da limpeza (com casca, talos, ossos, etc.)." />
               </Label>
@@ -166,7 +166,7 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           </div>
 
           <div>
-            <Label className="flex items-center gap-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5">
               Informar por
               <FieldHelp text="Escolha se vai digitar quanto foi descartado (perda) ou quanto sobrou utilizável (peso líquido). O outro valor é calculado automaticamente." />
             </Label>
@@ -184,7 +184,7 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           {mode === 'loss' ? (
             <div className="flex gap-2">
               <div className="flex-1">
-                <Label className="flex items-center gap-1.5">
+                <Label className="flex items-center gap-1.5 mb-1.5">
                   Perda
                   <FieldHelp text="Peso descartado durante a limpeza (cascas, ossos, gordura, talos). Será subtraído do peso bruto." />
                 </Label>
@@ -211,7 +211,7 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           ) : (
             <div className="flex gap-2">
               <div className="flex-1">
-                <Label className="flex items-center gap-1.5">
+                <Label className="flex items-center gap-1.5 mb-1.5">
                   Peso líquido
                   <FieldHelp text="Peso já limpo, pronto para uso na receita." />
                 </Label>
@@ -238,7 +238,7 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           )}
 
           <div>
-            <Label className="flex items-center gap-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5">
               Custo total da compra (R$)
               <FieldHelp text="Quanto você pagou pelo peso bruto informado. Usado para calcular o custo real por Kg limpo." />
             </Label>
