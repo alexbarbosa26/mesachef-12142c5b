@@ -25,6 +25,7 @@ import StockPurchases from "./pages/StockPurchases";
 import CMVDashboard from "./pages/CMVDashboard";
 import CMVSnapshots from "./pages/CMVSnapshots";
 import StockAdjustments from "./pages/StockAdjustments";
+import Calculators from "./pages/Calculators";
 import Companies from "./pages/Companies";
 import SelfService from "./pages/SelfService";
 import WhatsAppConfig from "./pages/WhatsAppConfig";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/cmv" element={<CMVDashboard />} />
             <Route path="/cmv/snapshots" element={<CMVSnapshots />} />
             <Route path="/stock-adjustments" element={<StockAdjustments />} />
+            <Route path="/calculators" element={<Calculators />} />
             <Route path="/users" element={<Users />} />
             <Route path="/companies" element={<Companies />} />
             <Route path="/self-service" element={<SelfService />} />
