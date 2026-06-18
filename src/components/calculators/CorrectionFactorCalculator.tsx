@@ -24,6 +24,7 @@ import {
 } from './calculatorMath';
 import { ApplyToStockDialog } from './ApplyToStockDialog';
 import { useProductionCalculations } from '@/hooks/useProductionCalculations';
+import { FieldHelp } from './FieldHelp';
 
 type InputMode = 'loss' | 'net';
 
@@ -125,7 +126,10 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
       <CardContent className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Label htmlFor="cf-name">Nome do alimento</Label>
+            <Label htmlFor="cf-name" className="flex items-center gap-1.5">
+              Nome do alimento
+              <FieldHelp text="Nome do insumo bruto que será limpo/processado (ex.: Salmão inteiro, Tomate, Alface)." />
+            </Label>
             <Input
               id="cf-name"
               value={foodName}
@@ -136,7 +140,10 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <Label>Peso bruto</Label>
+              <Label className="flex items-center gap-1.5">
+                Peso bruto
+                <FieldHelp text="Peso total do alimento como comprado, antes da limpeza (com casca, talos, ossos, etc.)." />
+              </Label>
               <Input
                 inputMode="decimal"
                 value={grossWeight}
@@ -159,7 +166,10 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           </div>
 
           <div>
-            <Label>Informar por</Label>
+            <Label className="flex items-center gap-1.5">
+              Informar por
+              <FieldHelp text="Escolha se vai digitar quanto foi descartado (perda) ou quanto sobrou utilizável (peso líquido). O outro valor é calculado automaticamente." />
+            </Label>
             <Select value={mode} onValueChange={(v) => setMode(v as InputMode)}>
               <SelectTrigger>
                 <SelectValue />
@@ -174,7 +184,10 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           {mode === 'loss' ? (
             <div className="flex gap-2">
               <div className="flex-1">
-                <Label>Perda</Label>
+                <Label className="flex items-center gap-1.5">
+                  Perda
+                  <FieldHelp text="Peso descartado durante a limpeza (cascas, ossos, gordura, talos). Será subtraído do peso bruto." />
+                </Label>
                 <Input
                   inputMode="decimal"
                   value={lossWeight}
@@ -198,7 +211,10 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           ) : (
             <div className="flex gap-2">
               <div className="flex-1">
-                <Label>Peso líquido</Label>
+                <Label className="flex items-center gap-1.5">
+                  Peso líquido
+                  <FieldHelp text="Peso já limpo, pronto para uso na receita." />
+                </Label>
                 <Input
                   inputMode="decimal"
                   value={netWeight}
@@ -222,7 +238,10 @@ export function CorrectionFactorCalculator({ onResultChange }: CorrectionCalcula
           )}
 
           <div>
-            <Label>Custo total da compra (R$)</Label>
+            <Label className="flex items-center gap-1.5">
+              Custo total da compra (R$)
+              <FieldHelp text="Quanto você pagou pelo peso bruto informado. Usado para calcular o custo real por Kg limpo." />
+            </Label>
             <Input
               inputMode="decimal"
               value={totalCost}
