@@ -31,6 +31,7 @@ import SelfService from "./pages/SelfService";
 import WhatsAppConfig from "./pages/WhatsAppConfig";
 import WhatsAppMonitor from "./pages/WhatsAppMonitor";
 import WhatsAppGlobalConfig from "./pages/WhatsAppGlobalConfig";
+import Trust from "./pages/Trust";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/whatsapp-global" element={<WhatsAppGlobalConfig />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/trust" element={<Trust />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
