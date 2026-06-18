@@ -24,6 +24,7 @@ import {
 } from './calculatorMath';
 import { ApplyToStockDialog } from './ApplyToStockDialog';
 import { useProductionCalculations } from '@/hooks/useProductionCalculations';
+import { FieldHelp } from './FieldHelp';
 
 interface Props {
   prefillFromCorrection?: { costPerKgNet: number; foodName: string } | null;
@@ -57,6 +58,8 @@ export function CookingFactorCalculator({ prefillFromCorrection }: Props) {
       costPerKgBefore: isFinite(c) ? c : 0,
     });
   }, [beforeWeight, beforeUnit, afterWeight, afterUnit, costPerKg]);
+
+  const gained = result ? result.afterG > result.beforeG : false;
 
   const applyCorrectionPrefill = () => {
     if (!prefillFromCorrection) return;
@@ -108,7 +111,10 @@ export function CookingFactorCalculator({ prefillFromCorrection }: Props) {
       <CardContent className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Label htmlFor="ck-name">Nome do alimento / preparo</Label>
+            <Label htmlFor="ck-name" className="flex items-center gap-1.5">
+              Nome do alimento / preparo
+              <FieldHelp text="Identifique o item após a cocção (ex.: Salmão grelhado, Arroz cozido, Frango assado)." />
+            </Label>
             <Input
               id="ck-name"
               value={foodName}
@@ -119,7 +125,10 @@ export function CookingFactorCalculator({ prefillFromCorrection }: Props) {
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <Label>Peso antes da cocção</Label>
+              <Label className="flex items-center gap-1.5">
+                Peso antes da cocção
+                <FieldHelp text="Peso do alimento já limpo, antes de ir ao fogo/forno. Use a mesma unidade selecionada ao lado." />
+              </Label>
               <Input
                 inputMode="decimal"
                 value={beforeWeight}
@@ -143,7 +152,10 @@ export function CookingFactorCalculator({ prefillFromCorrection }: Props) {
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <Label>Peso depois da cocção</Label>
+              <Label className="flex items-center gap-1.5">
+                Peso depois da cocção
+                <FieldHelp text="Peso final, já cozido. Pode ser menor (perda de água, ex.: carnes) ou maior (ganho por hidratação, ex.: arroz, feijão, massas)." />
+              </Label>
               <Input
                 inputMode="decimal"
                 value={afterWeight}
@@ -167,7 +179,10 @@ export function CookingFactorCalculator({ prefillFromCorrection }: Props) {
 
           <div className="md:col-span-2 flex items-end gap-2">
             <div className="flex-1">
-              <Label>Custo por Kg antes da cocção (R$)</Label>
+              <Label className="flex items-center gap-1.5">
+                Custo por Kg antes da cocção (R$)
+                <FieldHelp text="Custo de 1 Kg do alimento já limpo (após pré-preparo). Use 'Usar resultado da correção' para importar automaticamente." />
+              </Label>
               <Input
                 inputMode="decimal"
                 value={costPerKg}
@@ -196,7 +211,11 @@ export function CookingFactorCalculator({ prefillFromCorrection }: Props) {
 
         {result ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-3 border-t">
-            <Cell label="Perda na cocção" value={`${formatNumber(result.lossG, 0)} g`} sub={formatPct(result.lossPct)} />
+            <Cell
+              label={gained ? 'Ganho na cocção' : 'Perda na cocção'}
+              value={`${formatNumber(Math.abs(result.lossG), 0)} g`}
+              sub={formatPct(Math.abs(result.lossPct))}
+            />
             <Cell label="Rendimento" value={formatPct(result.yieldPct)} />
             <Cell label="Fator de cocção" value={formatNumber(result.cookingFactor, 3)} />
             <Cell label="Custo / Kg antes" value={formatBRL(result.costPerKgBefore)} muted={!result.costPerKgBefore} />
