@@ -76,7 +76,7 @@ export function TopImpactItemsChart({ data }: { data: { name: string; value: num
 }
 
 export function PriceGapChart({ data }: { data: { name: string; atual: number; sugerido: number }[] }) {
-  if (data.length === 0) return <EmptyState text="Cadastre fichas técnicas para ver o comparativo de preços." />;
+  if (data.length === 0) return <EmptyState text="Nenhum produto com preço abaixo do sugerido no momento." />;
   return (
     <ResponsiveContainer width="100%" height={Math.max(260, data.length * 36)}>
       <BarChart data={data} layout="vertical" margin={{ left: 100 }}>
