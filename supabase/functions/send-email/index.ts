@@ -149,14 +149,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // --- Authorization: only admins can send emails ---
-    const { data: roleData } = await userClient
+    // --- Authorization: only admins (or superadmins) can send emails ---
+    const { data: roleRows } = await userClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .maybeSingle();
+      .in('role', ['admin', 'superadmin']);
 
-    if (roleData?.role !== 'admin') {
+    if (!roleRows || roleRows.length === 0) {
       return new Response(
         JSON.stringify({ success: false, error: 'Apenas administradores podem enviar emails' }),
         { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
