@@ -75,8 +75,8 @@ const CentralLucro = () => {
       for (const p of data.pricingProducts as any[]) {
         const sheet: any = sheetsByProduct.get(p.id);
         if (!sheet) { incompleteSheets++; continue; }
-        const ings = sheet.technical_sheet_ingredients || [];
-        if (ings.length === 0 || !Number(sheet.cmv)) incompleteSheets++;
+        const ingCount = sheet.ingredient_count ?? (sheet.technical_sheet_ingredients?.length || 0);
+        if (ingCount === 0 || !Number(sheet.cmv)) incompleteSheets++;
         const calc = calculatePricing(sheet, data.pricingGlobal);
         if (!calc) continue;
         const atual = Number(sheet.sale_price || 0);
