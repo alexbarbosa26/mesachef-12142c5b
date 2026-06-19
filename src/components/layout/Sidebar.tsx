@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight, MessageCircle, TrendingUp } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
-import logoAsset from '@/assets/logo-mesachef.png.asset.json';
+const logoAsset = { url: '/assets/logo-mesachef.png' };
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
