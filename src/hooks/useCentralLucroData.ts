@@ -127,8 +127,8 @@ export function useCentralLucroData(period: Period) {
         .from('self_service_daily_records')
         .select('*')
         .eq('company_id', companyId as string)
-        .gte('record_date', range.startDate)
-        .lte('record_date', range.endDate);
+        .gte('date', range.startDate)
+        .lte('date', range.endDate);
       if (error) {
         // Tabela pode não existir em todos os ambientes — silenciar
         console.warn('self_service_daily_records:', error.message);
