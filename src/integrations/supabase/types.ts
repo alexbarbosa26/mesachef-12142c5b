@@ -1019,6 +1019,7 @@ export type Database = {
           purchase_date: string
           quantity: number
           stock_item_id: string
+          supplier_id: string | null
           supplier_name: string | null
           total_cost: number
           unit_cost: number
@@ -1033,6 +1034,7 @@ export type Database = {
           purchase_date?: string
           quantity?: number
           stock_item_id: string
+          supplier_id?: string | null
           supplier_name?: string | null
           total_cost?: number
           unit_cost?: number
@@ -1047,6 +1049,7 @@ export type Database = {
           purchase_date?: string
           quantity?: number
           stock_item_id?: string
+          supplier_id?: string | null
           supplier_name?: string | null
           total_cost?: number
           unit_cost?: number
@@ -1067,7 +1070,53 @@ export type Database = {
             referencedRelation: "stock_items"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      suppliers: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       technical_sheet_ingredients: {
         Row: {

@@ -22,6 +22,7 @@ import TechnicalSheetPage from "./pages/TechnicalSheetPage";
 import PricingConfig from "./pages/PricingConfig";
 import PricingReports from "./pages/PricingReports";
 import StockPurchases from "./pages/StockPurchases";
+import Suppliers from "./pages/Suppliers";
 import CMVDashboard from "./pages/CMVDashboard";
 import CMVSnapshots from "./pages/CMVSnapshots";
 import StockAdjustments from "./pages/StockAdjustments";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/pricing/config" element={<PricingConfig />} />
             <Route path="/pricing/reports" element={<PricingReports />} />
             <Route path="/stock-purchases" element={<StockPurchases />} />
+            <Route path="/suppliers" element={<Suppliers />} />
             <Route path="/cmv" element={<CMVDashboard />} />
             <Route path="/cmv/snapshots" element={<CMVSnapshots />} />
             <Route path="/stock-adjustments" element={<StockAdjustments />} />

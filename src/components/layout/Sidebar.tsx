@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight, MessageCircle, TrendingUp } from 'lucide-react';
-import { ShoppingCart, TrendingDown } from 'lucide-react';
+import { ShoppingCart, TrendingDown, Truck } from 'lucide-react';
 const logoAsset = { url: '/assets/logo-mesachef.png' };
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
@@ -72,6 +72,7 @@ const Sidebar = () => {
         { name: 'Preenchimento', href: '/stock-entry', icon: Edit3, adminOnly: false },
         { name: 'Valoração', href: '/stock-valuation', icon: DollarSign, adminOnly: true },
         { name: 'Compras', href: '/stock-purchases', icon: ShoppingCart, adminOnly: true },
+        { name: 'Fornecedores', href: '/suppliers', icon: Truck, adminOnly: true },
         { name: 'Ajustes de Estoque', href: '/stock-adjustments', icon: Wrench, adminOnly: true },
         { name: 'Calculadoras', href: '/calculators', icon: Calculator, adminOnly: false },
       ],

@@ -10,6 +10,7 @@ export interface StockPurchase {
   unit_cost: number;
   total_cost: number;
   supplier_name: string | null;
+  supplier_id: string | null;
   purchase_date: string;
   notes: string | null;
   created_by: string | null;
