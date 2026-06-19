@@ -35,6 +35,29 @@ export default function WhatsAppGlobalConfigPage() {
 
   useEffect(() => { if (isSuperadmin) load(); }, [isSuperadmin]);
 
+  async function extractError(error: any, data: any, fallback: string): Promise<string> {
+    // Prefer error returned in the JSON body (200 with { error })
+    if (data && typeof data === 'object' && (data as any).error) {
+      return String((data as any).error);
+    }
+    // FunctionsHttpError: try to read the response body for the real message
+    try {
+      const ctx = error?.context;
+      if (ctx && typeof ctx.json === 'function') {
+        const body = await ctx.json();
+        if (body?.error) return String(body.error);
+        if (body?.message) return String(body.message);
+      } else if (ctx && typeof ctx.text === 'function') {
+        const txt = await ctx.text();
+        if (txt) return txt.slice(0, 300);
+      }
+    } catch {
+      // ignore
+    }
+    if (error?.message) return String(error.message);
+    return fallback;
+  }
+
   async function load() {
     setLoading(true);
     const { data, error } = await supabase.functions.invoke('whatsapp-manager', {
@@ -42,7 +65,9 @@ export default function WhatsAppGlobalConfigPage() {
     });
     setLoading(false);
     if (error || (data as any)?.error) {
-      toast({ title: 'Erro', description: (data as any)?.error ?? 'Falha ao carregar.', variant: 'destructive' });
+      const description = await extractError(error, data, 'Falha ao carregar.');
+      console.error('whatsapp-manager get_global_config:', description, error);
+      toast({ title: 'Erro ao carregar configuração global', description, variant: 'destructive' });
       return;
     }
     const d = data as any;
@@ -69,7 +94,9 @@ export default function WhatsAppGlobalConfigPage() {
     const { data, error } = await supabase.functions.invoke('whatsapp-manager', { body: payload });
     setSaving(false);
     if (error || (data as any)?.error) {
-      toast({ title: 'Erro', description: (data as any)?.error ?? 'Falha ao salvar.', variant: 'destructive' });
+      const description = await extractError(error, data, 'Falha ao salvar.');
+      console.error('whatsapp-manager save_global_config:', description, error);
+      toast({ title: 'Erro ao salvar', description, variant: 'destructive' });
       return;
     }
     setApiKey('');
@@ -88,7 +115,9 @@ export default function WhatsAppGlobalConfigPage() {
     });
     setTesting(false);
     if (error || (data as any)?.error) {
-      toast({ title: 'Falha no teste', description: (data as any)?.error ?? 'Erro', variant: 'destructive' });
+      const description = await extractError(error, data, 'Erro no envio.');
+      console.error('whatsapp-manager test_global:', description, error);
+      toast({ title: 'Falha no teste', description, variant: 'destructive' });
       return;
     }
     toast({ title: 'Mensagem de teste enviada!' });
