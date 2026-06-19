@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
-import logoAsset from '@/assets/logo-mesachef.png.asset.json';
+const logoAsset = { url: '/assets/logo-mesachef.png' };
 import { supabase } from '@/integrations/supabase/client';
 
 const passwordSchema = z.object({
