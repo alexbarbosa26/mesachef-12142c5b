@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useCentralLucroData } from '@/hooks/useCentralLucroData';
 import { Period, formatCurrency, formatPercent } from '@/utils/centralLucroCalculations';
-import { calculateItemTotalValue, normalizeQuantityToBaseUnit } from '@/utils/stockValuation';
+import { calculateItemTotalValue } from '@/utils/stockValuation';
 import { ExecutiveCard } from '@/components/central-lucro/ExecutiveCard';
 import { SmartAlert, SmartAlertItem } from '@/components/central-lucro/SmartAlert';
 import { PeriodSelector } from '@/components/central-lucro/PeriodSelector';
