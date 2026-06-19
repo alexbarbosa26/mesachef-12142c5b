@@ -1081,6 +1081,7 @@ export type Database = {
       }
       suppliers: {
         Row: {
+          cnpj: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -1093,6 +1094,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cnpj?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -1105,6 +1107,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cnpj?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
