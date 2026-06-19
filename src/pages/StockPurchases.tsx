@@ -34,33 +34,42 @@ import { ptBR } from 'date-fns/locale';
 import { PageLoader } from '@/components/ui/page-loader';
 import { formatCurrency } from '@/utils/cmvCalculations';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSuppliers } from '@/hooks/useSuppliers';
+import { Link } from 'react-router-dom';
 
 const StockPurchases = () => {
   const { purchases, loading, addPurchase, deletePurchase } = useStockPurchases();
   const { stockItems, categories } = useStockData();
+  const { suppliers, addSupplier } = useSuppliers();
   const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [quickSupplierOpen, setQuickSupplierOpen] = useState(false);
+  const [quickSupplierName, setQuickSupplierName] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [formData, setFormData] = useState({
     stock_item_id: '',
     quantity: '',
     unit_cost: '',
-    supplier_name: '',
+    supplier_id: '',
     purchase_date: format(new Date(), 'yyyy-MM-dd'),
     notes: '',
   });
 
   const activeItems = stockItems.filter((i) => i.is_active);
+  const activeSuppliers = suppliers.filter((s) => s.is_active);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.stock_item_id || !formData.quantity || !formData.unit_cost) return;
 
+    const supplier = suppliers.find((s) => s.id === formData.supplier_id);
+
     await addPurchase({
       stock_item_id: formData.stock_item_id,
       quantity: parseFloat(formData.quantity),
       unit_cost: parseFloat(formData.unit_cost),
-      supplier_name: formData.supplier_name || null,
+      supplier_id: formData.supplier_id || null,
+      supplier_name: supplier?.name || null,
       purchase_date: formData.purchase_date,
       notes: formData.notes || null,
       created_by: user?.id || null,
@@ -70,11 +79,21 @@ const StockPurchases = () => {
       stock_item_id: '',
       quantity: '',
       unit_cost: '',
-      supplier_name: '',
+      supplier_id: '',
       purchase_date: format(new Date(), 'yyyy-MM-dd'),
       notes: '',
     });
     setDialogOpen(false);
+  };
+
+  const handleQuickAddSupplier = async () => {
+    if (!quickSupplierName.trim()) return;
+    const created = await addSupplier({ name: quickSupplierName, is_active: true });
+    if (created) {
+      setFormData((f) => ({ ...f, supplier_id: created.id }));
+      setQuickSupplierName('');
+      setQuickSupplierOpen(false);
+    }
   };
 
   const selectedItem = activeItems.find((i) => i.id === formData.stock_item_id);
@@ -181,14 +200,60 @@ const StockPurchases = () => {
                 )}
 
                 <div>
-                  <Label>Fornecedor</Label>
-                  <Input
-                    value={formData.supplier_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, supplier_name: e.target.value })
-                    }
-                    placeholder="Nome do fornecedor"
-                  />
+                  <div className="flex items-center justify-between">
+                    <Label>Fornecedor</Label>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setQuickSupplierOpen((v) => !v)}
+                    >
+                      {quickSupplierOpen ? 'Cancelar' : '+ Novo fornecedor'}
+                    </Button>
+                  </div>
+                  {quickSupplierOpen ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={quickSupplierName}
+                        onChange={(e) => setQuickSupplierName(e.target.value)}
+                        placeholder="Nome do novo fornecedor"
+                        autoFocus
+                      />
+                      <Button type="button" onClick={handleQuickAddSupplier} disabled={!quickSupplierName.trim()}>
+                        Salvar
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select
+                      value={formData.supplier_id}
+                      onValueChange={(v) => setFormData({ ...formData, supplier_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o fornecedor (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeSuppliers.length === 0 ? (
+                          <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                            Nenhum fornecedor cadastrado
+                          </div>
+                        ) : (
+                          activeSuppliers.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Gerencie em{' '}
+                    <Link to="/suppliers" className="underline">
+                      Fornecedores
+                    </Link>
+                    .
+                  </p>
                 </div>
 
                 <div>
