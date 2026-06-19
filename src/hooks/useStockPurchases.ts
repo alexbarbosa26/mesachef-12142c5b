@@ -113,6 +113,90 @@ export const useStockPurchases = () => {
     return true;
   };
 
+  const updatePurchase = async (id: string, updates: Partial<StockPurchase>) => {
+    const { data: original, error: fetchError } = await supabase
+      .from('stock_purchases')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !original) {
+      toast({ title: 'Erro', description: 'Compra não encontrada', variant: 'destructive' });
+      return null;
+    }
+
+    const newQuantity = updates.quantity ?? original.quantity;
+    const newUnitCost = updates.unit_cost ?? original.unit_cost;
+    const totalCost = newQuantity * newUnitCost;
+
+    const payload = { ...updates, quantity: newQuantity, unit_cost: newUnitCost, total_cost: totalCost };
+
+    const { data, error } = await supabase
+      .from('stock_purchases')
+      .update(payload as any)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao atualizar compra', variant: 'destructive' });
+      return null;
+    }
+
+    // Adjust stock item quantity by the delta
+    const quantityDelta = newQuantity - original.quantity;
+    const targetItemId = updates.stock_item_id ?? original.stock_item_id;
+
+    if (updates.stock_item_id && updates.stock_item_id !== original.stock_item_id) {
+      // Item changed: subtract from old item, add full new quantity to new item
+      const { data: oldItem } = await supabase
+        .from('stock_items')
+        .select('current_quantity')
+        .eq('id', original.stock_item_id)
+        .single();
+      if (oldItem) {
+        await supabase
+          .from('stock_items')
+          .update({ current_quantity: oldItem.current_quantity - original.quantity })
+          .eq('id', original.stock_item_id);
+      }
+      const { data: newItem } = await supabase
+        .from('stock_items')
+        .select('current_quantity')
+        .eq('id', updates.stock_item_id)
+        .single();
+      if (newItem) {
+        await supabase
+          .from('stock_items')
+          .update({ current_quantity: newItem.current_quantity + newQuantity })
+          .eq('id', updates.stock_item_id);
+      }
+    } else if (quantityDelta !== 0) {
+      const { data: item } = await supabase
+        .from('stock_items')
+        .select('current_quantity')
+        .eq('id', targetItemId)
+        .single();
+      if (item) {
+        await supabase
+          .from('stock_items')
+          .update({ current_quantity: item.current_quantity + quantityDelta })
+          .eq('id', targetItemId);
+      }
+    }
+
+    await logAction({
+      action: 'UPDATE',
+      entity_type: 'stock_purchase',
+      entity_id: id,
+      details: { before: original, after: data },
+    });
+
+    await fetchPurchases();
+    toast({ title: 'Sucesso', description: 'Compra atualizada com sucesso!' });
+    return data;
+  };
+
   const getPurchasesByItem = (itemId: string) => {
     return purchases.filter((p) => p.stock_item_id === itemId);
   };
@@ -137,6 +221,7 @@ export const useStockPurchases = () => {
     refetch: fetchPurchases,
     addPurchase,
     deletePurchase,
+    updatePurchase,
     getPurchasesByItem,
     getPurchasesByPeriod,
     getTotalPurchasesValue,

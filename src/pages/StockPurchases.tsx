@@ -28,7 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Trash2, ShoppingCart, Package } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Package, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -38,11 +38,12 @@ import { useSuppliers } from '@/hooks/useSuppliers';
 import { Link } from 'react-router-dom';
 
 const StockPurchases = () => {
-  const { purchases, loading, addPurchase, deletePurchase } = useStockPurchases();
+  const { purchases, loading, addPurchase, deletePurchase, updatePurchase } = useStockPurchases();
   const { stockItems, categories } = useStockData();
   const { suppliers, addSupplier } = useSuppliers();
   const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [quickSupplierOpen, setQuickSupplierOpen] = useState(false);
   const [quickSupplierName, setQuickSupplierName] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -64,7 +65,7 @@ const StockPurchases = () => {
 
     const supplier = suppliers.find((s) => s.id === formData.supplier_id);
 
-    await addPurchase({
+    const payload = {
       stock_item_id: formData.stock_item_id,
       quantity: parseFloat(formData.quantity),
       unit_cost: parseFloat(formData.unit_cost),
@@ -72,8 +73,13 @@ const StockPurchases = () => {
       supplier_name: supplier?.name || null,
       purchase_date: formData.purchase_date,
       notes: formData.notes || null,
-      created_by: user?.id || null,
-    });
+    };
+
+    if (editingId) {
+      await updatePurchase(editingId, payload);
+    } else {
+      await addPurchase({ ...payload, created_by: user?.id || null });
+    }
 
     setFormData({
       stock_item_id: '',
@@ -83,7 +89,36 @@ const StockPurchases = () => {
       purchase_date: format(new Date(), 'yyyy-MM-dd'),
       notes: '',
     });
+    setEditingId(null);
     setDialogOpen(false);
+  };
+
+  const handleEdit = (purchase: typeof purchases[number]) => {
+    setEditingId(purchase.id);
+    setFormData({
+      stock_item_id: purchase.stock_item_id,
+      quantity: String(purchase.quantity),
+      unit_cost: String(purchase.unit_cost),
+      supplier_id: purchase.supplier_id || '',
+      purchase_date: purchase.purchase_date,
+      notes: purchase.notes || '',
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingId(null);
+      setFormData({
+        stock_item_id: '',
+        quantity: '',
+        unit_cost: '',
+        supplier_id: '',
+        purchase_date: format(new Date(), 'yyyy-MM-dd'),
+        notes: '',
+      });
+    }
   };
 
   const handleQuickAddSupplier = async () => {
@@ -128,7 +163,7 @@ const StockPurchases = () => {
               Controle de entradas de mercadorias e custos
             </p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -137,7 +172,7 @@ const StockPurchases = () => {
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Registrar Compra</DialogTitle>
+                <DialogTitle>{editingId ? 'Editar Compra' : 'Registrar Compra'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -279,7 +314,7 @@ const StockPurchases = () => {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={!formData.stock_item_id || !formData.quantity || !formData.unit_cost}>
-                  Registrar Compra
+                  {editingId ? 'Salvar Alterações' : 'Registrar Compra'}
                 </Button>
               </form>
             </DialogContent>
@@ -400,14 +435,23 @@ const StockPurchases = () => {
                           </TableCell>
                           <TableCell>{purchase.supplier_name || '-'}</TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deletePurchase(purchase.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(purchase)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deletePurchase(purchase.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
