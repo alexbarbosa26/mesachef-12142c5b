@@ -202,17 +202,21 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Resolve company_id from caller's profile (NEVER trust client)
+    const body = (await req.json()) as Body;
+    const action = body.action;
+
+    // Resolve company_id from caller's profile (NEVER trust client).
+    // Global/superadmin actions do not require a company, so resolve lazily.
     const { data: profile } = await adminClient
       .from("profiles")
       .select("company_id")
       .eq("user_id", user.id)
       .maybeSingle();
-    const companyId = (profile as { company_id: string | null } | null)?.company_id;
-    if (!companyId) return json({ error: "Empresa não encontrada" }, 400);
-
-    const body = (await req.json()) as Body;
-    const action = body.action;
+    const companyId = (profile as { company_id: string | null } | null)?.company_id ?? null;
+    const requiresCompany = action !== "get_global_config" && action !== "save_global_config";
+    if (requiresCompany && !companyId) {
+      return json({ error: "Empresa não encontrada" }, 400);
+    }
 
     // -------- Global config (superadmin only) ----------
     async function loadGlobal(): Promise<GlobalConfigRow | null> {
@@ -278,7 +282,7 @@ serve(async (req) => {
       try {
         const r = await sendViaEvolution(g.base_url, g.instance, g.api_key, testNumber, text);
         await recordLog(adminClient, {
-          company_id: companyId,
+          company_id: companyId ?? "00000000-0000-0000-0000-000000000000",
           send_type: "test_global",
           origin: "system",
           status: "success",
@@ -290,7 +294,7 @@ serve(async (req) => {
         return json({ success: true });
       } catch (e: any) {
         await recordLog(adminClient, {
-          company_id: companyId,
+          company_id: companyId ?? "00000000-0000-0000-0000-000000000000",
           send_type: "test_global",
           origin: "system",
           status: "failure",
