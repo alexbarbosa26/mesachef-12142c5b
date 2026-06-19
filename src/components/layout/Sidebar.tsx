@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight, MessageCircle } from 'lucide-react';
+import { ClipboardList, Edit3, Users, LogOut, Menu, X, Bell, LayoutDashboard, DollarSign, FileText, Settings, Calculator, BarChart3, Camera, Wrench, ChevronDown, Package, Tag, Shield, Building2, UtensilsCrossed, ChevronsLeft, ChevronsRight, MessageCircle, TrendingUp } from 'lucide-react';
 import { ShoppingCart, TrendingDown } from 'lucide-react';
 import logoAsset from '@/assets/logo-mesachef.png.asset.json';
 import { Button } from '@/components/ui/button';
@@ -59,7 +59,8 @@ const Sidebar = () => {
   type NavGroup = { name: string; icon: any; items: NavItem[] };
 
   const standaloneItems: NavItem[] = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, adminOnly: false },
+    { name: 'Central de Lucro', href: '/central-lucro', icon: TrendingUp, adminOnly: true },
+    { name: 'Gestão de Estoque', href: '/dashboard', icon: LayoutDashboard, adminOnly: false },
   ];
 
   const groups: NavGroup[] = [
