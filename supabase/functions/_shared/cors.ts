@@ -5,6 +5,9 @@ const ALLOWED_ORIGINS = [
   'https://mesachef.lovable.app',
   'https://id-preview--ff07262f-c0bc-4f46-b9f9-f0b2860b311e.lovable.app',
   'https://ff07262f-c0bc-4f46-b9f9-f0b2860b311e.lovableproject.com',
+  'https://gestao.mesachef.com.br',
+  'https://mesachef.com.br',
+  'https://app.mesachef.com.br',
 ];
 
 // In development, also allow localhost
@@ -14,9 +17,14 @@ if (Deno.env.get('DENO_ENV') !== 'production') {
 
 export function getCorsHeaders(requestOrigin: string | null): Record<string, string> {
   // Check if the origin is in our allowed list
-  const origin = requestOrigin && ALLOWED_ORIGINS.some(allowed => 
-    requestOrigin === allowed || requestOrigin.endsWith('.lovable.app') || requestOrigin.endsWith('.lovableproject.com')
-  ) ? requestOrigin : ALLOWED_ORIGINS[0];
+  const isAllowed = !!requestOrigin && (
+    ALLOWED_ORIGINS.includes(requestOrigin) ||
+    requestOrigin.endsWith('.lovable.app') ||
+    requestOrigin.endsWith('.lovableproject.com') ||
+    requestOrigin.endsWith('.mesachef.com.br') ||
+    requestOrigin === 'https://mesachef.com.br'
+  );
+  const origin = isAllowed ? (requestOrigin as string) : ALLOWED_ORIGINS[0];
 
   return {
     'Access-Control-Allow-Origin': origin,
