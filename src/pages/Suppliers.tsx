@@ -16,7 +16,7 @@ import { Plus, Pencil, Trash2, Truck } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Badge } from '@/components/ui/badge';
 
-const emptyForm = { name: '', phone: '', email: '', notes: '', is_active: true };
+const emptyForm = { name: '', cnpj: '', phone: '', email: '', notes: '', is_active: true };
 
 const Suppliers = () => {
   const { suppliers, loading, addSupplier, updateSupplier, deleteSupplier } = useSuppliers();
@@ -34,6 +34,7 @@ const Suppliers = () => {
     setEditing(s);
     setForm({
       name: s.name,
+      cnpj: s.cnpj || '',
       phone: s.phone || '',
       email: s.email || '',
       notes: s.notes || '',
@@ -80,6 +81,14 @@ const Suppliers = () => {
                   <Label>Nome *</Label>
                   <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do fornecedor" autoFocus />
                 </div>
+                <div>
+                  <Label>CNPJ</Label>
+                  <Input
+                    value={form.cnpj}
+                    onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+                    placeholder="00.000.000/0000-00"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Telefone</Label>
@@ -123,6 +132,7 @@ const Suppliers = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
+                      <TableHead>CNPJ</TableHead>
                       <TableHead>Telefone</TableHead>
                       <TableHead>E-mail</TableHead>
                       <TableHead>Status</TableHead>
@@ -133,6 +143,7 @@ const Suppliers = () => {
                     {suppliers.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell className="font-medium">{s.name}</TableCell>
+                        <TableCell>{s.cnpj || '-'}</TableCell>
                         <TableCell>{s.phone || '-'}</TableCell>
                         <TableCell>{s.email || '-'}</TableCell>
                         <TableCell>
