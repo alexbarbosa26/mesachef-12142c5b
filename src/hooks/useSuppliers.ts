@@ -6,6 +6,7 @@ export interface Supplier {
   id: string;
   company_id: string;
   name: string;
+  cnpj: string | null;
   phone: string | null;
   email: string | null;
   notes: string | null;
@@ -48,6 +49,7 @@ export const useSuppliers = () => {
       .from('suppliers')
       .insert({
         name: payload.name.trim(),
+        cnpj: payload.cnpj || null,
         phone: payload.phone || null,
         email: payload.email || null,
         notes: payload.notes || null,
@@ -69,6 +71,7 @@ export const useSuppliers = () => {
       .from('suppliers')
       .update({
         name: payload.name?.trim(),
+        cnpj: payload.cnpj ?? null,
         phone: payload.phone ?? null,
         email: payload.email ?? null,
         notes: payload.notes ?? null,
