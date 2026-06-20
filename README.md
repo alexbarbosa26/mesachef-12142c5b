@@ -64,6 +64,22 @@ This project is built with:
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
 
+## Análise de Código com SonarQube
+
+Este projeto possui integração automática com SonarQube via GitHub Actions.
+
+Para que a análise funcione corretamente, configure os seguintes secrets no repositório do GitHub:
+
+- `SONAR_TOKEN` — token de autenticação do SonarQube
+- `SONAR_HOST_URL` — URL da instância SonarQube (ex.: `https://sonar.exemplo.com.br`)
+
+O workflow é executado automaticamente em cada push nas branches `main` ou `master`.
+
+Para mais detalhes, consulte os arquivos:
+
+- `.github/workflows/sonarqube.yml`
+- `sonar-project.properties`
+
 ## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!
