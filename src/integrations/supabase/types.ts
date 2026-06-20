@@ -434,6 +434,56 @@ export type Database = {
           },
         ]
       }
+      pricing_resale_products: {
+        Row: {
+          acquisition_cost: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          desired_profit_percentage: number
+          id: string
+          packaging_cost: number
+          practiced_price: number
+          product_name: string
+          stock_item_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          acquisition_cost?: number
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          desired_profit_percentage?: number
+          id?: string
+          packaging_cost?: number
+          practiced_price?: number
+          product_name: string
+          stock_item_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acquisition_cost?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          desired_profit_percentage?: number
+          id?: string
+          packaging_cost?: number
+          practiced_price?: number
+          product_name?: string
+          stock_item_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_resale_products_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_variable_costs: {
         Row: {
           company_id: string
