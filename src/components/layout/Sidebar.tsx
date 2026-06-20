@@ -90,6 +90,7 @@ const Sidebar = () => {
       icon: Tag,
       items: [
         { name: 'Precificação', href: '/pricing', icon: Calculator, adminOnly: false },
+        { name: 'Revenda', href: '/pricing/resale', icon: ShoppingCart, adminOnly: true },
         { name: 'Relatórios', href: '/pricing/reports', icon: BarChart3, adminOnly: true },
         { name: 'Self-Service', href: '/self-service', icon: UtensilsCrossed, adminOnly: true },
       ],
