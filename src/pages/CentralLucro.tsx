@@ -67,6 +67,9 @@ const CentralLucro = () => {
     const sheetsByProduct = new Map(
       data.technicalSheets.map((s: any) => [s.product_id, s])
     );
+    const configByProduct = new Map(
+      (data.pricingConfigProducts || []).map((c: any) => [c.product_id, c])
+    );
     let pricedBelow = 0;
     let incompleteSheets = 0;
     const priceGap: { name: string; atual: number; sugerido: number; diff: number }[] = [];
@@ -77,7 +80,8 @@ const CentralLucro = () => {
         if (!sheet) { incompleteSheets++; continue; }
         const ingCount = sheet.ingredient_count ?? (sheet.technical_sheet_ingredients?.length || 0);
         if (ingCount === 0 || !Number(sheet.cmv)) incompleteSheets++;
-        const calc = calculatePricing(sheet, data.pricingGlobal);
+        const productConfig = configByProduct.get(p.id) as any;
+        const calc = calculatePricing(sheet, data.pricingGlobal, productConfig);
         if (!calc) continue;
         const atual = Number(sheet.sale_price || 0);
         const sugerido = Number(calc.reference_suggested_price || 0);
