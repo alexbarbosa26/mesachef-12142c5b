@@ -28,7 +28,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Trash2, ShoppingCart, Package, Pencil } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Package, Pencil, Check, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -47,6 +57,7 @@ const StockPurchases = () => {
   const [quickSupplierOpen, setQuickSupplierOpen] = useState(false);
   const [quickSupplierName, setQuickSupplierName] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [itemPickerOpen, setItemPickerOpen] = useState(false);
   const [formData, setFormData] = useState({
     stock_item_id: '',
     quantity: '',
