@@ -185,6 +185,19 @@ export function useCentralLucroData(period: Period) {
     },
   });
 
+  const pricingConfigProducts = useQuery({
+    queryKey: ['central-lucro', 'pricing-config-products', companyId],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pricing_config_product')
+        .select('*')
+        .eq('company_id', companyId as string);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const selfServiceRecords = useQuery({
     queryKey: ['central-lucro', 'self-service', companyId, range.startDate, range.endDate],
     enabled,
@@ -223,6 +236,7 @@ export function useCentralLucroData(period: Period) {
     pricingProducts: pricingProducts.data || [],
     technicalSheets: technicalSheets.data || [],
     pricingGlobal: pricingGlobal.data || null,
+    pricingConfigProducts: pricingConfigProducts.data || [],
     selfServiceRecords: selfServiceRecords.data || [],
   };
 }
