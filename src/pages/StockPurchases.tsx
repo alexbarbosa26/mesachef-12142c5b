@@ -28,7 +28,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Trash2, ShoppingCart, Package, Pencil } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Package, Pencil, Check, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -47,6 +57,7 @@ const StockPurchases = () => {
   const [quickSupplierOpen, setQuickSupplierOpen] = useState(false);
   const [quickSupplierName, setQuickSupplierName] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [itemPickerOpen, setItemPickerOpen] = useState(false);
   const [formData, setFormData] = useState({
     stock_item_id: '',
     quantity: '',
@@ -177,23 +188,59 @@ const StockPurchases = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label>Item de Estoque *</Label>
-                  <Select
-                    value={formData.stock_item_id}
-                    onValueChange={(v) =>
-                      setFormData({ ...formData, stock_item_id: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeItems.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name} ({item.unit})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={itemPickerOpen} onOpenChange={setItemPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={itemPickerOpen}
+                        className={cn(
+                          'w-full justify-between font-normal',
+                          !selectedItem && 'text-muted-foreground',
+                        )}
+                      >
+                        {selectedItem
+                          ? `${selectedItem.name} (${selectedItem.unit})`
+                          : 'Selecione o item'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command
+                        filter={(value, search) =>
+                          value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                        }
+                      >
+                        <CommandInput placeholder="Buscar item..." />
+                        <CommandList>
+                          <CommandEmpty>Nenhum item encontrado.</CommandEmpty>
+                          <CommandGroup>
+                            {activeItems.map((item) => (
+                              <CommandItem
+                                key={item.id}
+                                value={`${item.name} ${item.unit}`}
+                                onSelect={() => {
+                                  setFormData({ ...formData, stock_item_id: item.id });
+                                  setItemPickerOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    formData.stock_item_id === item.id
+                                      ? 'opacity-100'
+                                      : 'opacity-0',
+                                  )}
+                                />
+                                {item.name} ({item.unit})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
