@@ -77,7 +77,10 @@ export const useStockPurchases = () => {
       if (item) {
         await supabase
           .from('stock_items')
-          .update({ current_quantity: item.current_quantity + purchase.quantity })
+          .update({
+            current_quantity: item.current_quantity + purchase.quantity,
+            value: purchase.unit_cost ?? undefined,
+          })
           .eq('id', purchase.stock_item_id);
       }
     }
@@ -168,10 +171,13 @@ export const useStockPurchases = () => {
       if (newItem) {
         await supabase
           .from('stock_items')
-          .update({ current_quantity: newItem.current_quantity + newQuantity })
+          .update({
+            current_quantity: newItem.current_quantity + newQuantity,
+            value: newUnitCost,
+          })
           .eq('id', updates.stock_item_id);
       }
-    } else if (quantityDelta !== 0) {
+    } else {
       const { data: item } = await supabase
         .from('stock_items')
         .select('current_quantity')
@@ -180,7 +186,10 @@ export const useStockPurchases = () => {
       if (item) {
         await supabase
           .from('stock_items')
-          .update({ current_quantity: item.current_quantity + quantityDelta })
+          .update({
+            current_quantity: item.current_quantity + quantityDelta,
+            value: newUnitCost,
+          })
           .eq('id', targetItemId);
       }
     }
