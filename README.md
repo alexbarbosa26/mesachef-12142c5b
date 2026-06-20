@@ -71,14 +71,3 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
-
-## Análise de Código com SonarQube
-
-Este projeto possui análise automática de qualidade de código via SonarQube, executada pelo workflow `.github/workflows/sonarqube.yml` a cada push nas branches `main`/`master`.
-
-Antes de executar o workflow, é necessário cadastrar os seguintes secrets no GitHub (Settings → Secrets and variables → Actions):
-
-- `SONAR_TOKEN` — token de autenticação gerado no SonarQube.
-- `SONAR_HOST_URL` — URL do servidor SonarQube self-hosted.
-
-Nenhum desses valores deve ser commitado no repositório.
