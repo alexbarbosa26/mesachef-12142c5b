@@ -353,6 +353,17 @@ export default function PricingResale() {
                   Exibindo <span className="font-semibold text-foreground">{filteredIndexes.length}</span> de {rows.length}
                 </div>
               </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border bg-muted/30 px-3 py-2">
+                <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+                  Legenda Status
+                </span>
+                {LEGEND_ORDER.map((s) => (
+                  <span key={s} className="flex items-center gap-1.5 text-xs">
+                    <span className={cn('w-2.5 h-2.5 rounded-full', STATUS_META[s].dotClass)} />
+                    {STATUS_META[s].label}
+                  </span>
+                ))}
+              </div>
               <div className="flex flex-col md:flex-row gap-2 md:items-center">
                 <div className="relative flex-1 min-w-[220px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
