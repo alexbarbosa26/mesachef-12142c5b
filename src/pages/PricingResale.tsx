@@ -70,13 +70,15 @@ const formatBRL = (v: number) =>
 const formatPct = (v: number) =>
   `${(isFinite(v) ? v : 0).toFixed(2)}%`;
 
-const STATUS_META: Record<ResaleStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
-  viavel: { label: 'Dentro da margem', variant: 'default', className: 'bg-emerald-600 hover:bg-emerald-600' },
-  ajuste: { label: 'Precisa de ajuste', variant: 'secondary', className: 'bg-amber-500 text-white hover:bg-amber-500' },
-  informe_preco: { label: 'Informe preço', variant: 'outline' },
-  informe_custo: { label: 'Informe custo', variant: 'outline' },
-  config_invalida: { label: 'Configuração inválida', variant: 'destructive' },
+const STATUS_META: Record<ResaleStatus, { label: string; dotClass: string }> = {
+  viavel: { label: 'Dentro da margem', dotClass: 'bg-emerald-500' },
+  ajuste: { label: 'Precisa de ajuste', dotClass: 'bg-red-500' },
+  informe_preco: { label: 'Informe preço', dotClass: 'bg-slate-400' },
+  informe_custo: { label: 'Informe custo', dotClass: 'bg-slate-400' },
+  config_invalida: { label: 'Configuração inválida', dotClass: 'bg-destructive' },
 };
+
+const LEGEND_ORDER: ResaleStatus[] = ['viavel', 'ajuste', 'informe_preco', 'informe_custo', 'config_invalida'];
 
 function toDraft(p: ResaleProduct): DraftRow {
   return {
@@ -587,9 +589,14 @@ export default function PricingResale() {
                           {formatPct(c.appliedProfitPct)}
                         </TableCell>
                         <TableCell className="text-center py-3 px-3">
-                          <Badge variant={meta.variant} className={meta.className}>
-                            {meta.label}
-                          </Badge>
+                          <span
+                            title={meta.label}
+                            aria-label={meta.label}
+                            className={cn(
+                              'inline-block w-3 h-3 rounded-full ring-2 ring-background shadow',
+                              meta.dotClass,
+                            )}
+                          />
                         </TableCell>
                         <TableCell className="text-right py-3 px-3 tabular-nums">{formatBRL(c.profitValue)}</TableCell>
                         <TableCell className="text-right py-3 px-3 tabular-nums text-muted-foreground">{formatPct(c.cmvPct)}</TableCell>
