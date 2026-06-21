@@ -26,6 +26,14 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Plus, Save, Trash2, Check, ChevronsUpDown, Lock, ShoppingBag } from 'lucide-react';
+import { Search, X, Filter } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStockData } from '@/hooks/useStockData';
 import { usePricingConfigGlobal } from '@/hooks/usePricingData';
@@ -104,6 +112,9 @@ export default function PricingResale() {
 
   const [rows, setRows] = useState<DraftRow[]>([]);
   const [pickerOpen, setPickerOpen] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | ResaleStatus>('all');
+  const [linkFilter, setLinkFilter] = useState<'all' | 'linked' | 'manual'>('all');
 
   useEffect(() => {
     setRows((prev) => {
@@ -160,6 +171,26 @@ export default function PricingResale() {
       avgProfit: pricedCount ? profitSum / pricedCount : 0,
     };
   }, [rows, calcs]);
+
+  const filteredIndexes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rows
+      .map((r, idx) => ({ r, idx, c: calcs[idx] }))
+      .filter(({ r, c }) => {
+        if (q && !r.product_name.toLowerCase().includes(q)) return false;
+        if (statusFilter !== 'all' && c?.status !== statusFilter) return false;
+        if (linkFilter === 'linked' && !r.stock_item_id) return false;
+        if (linkFilter === 'manual' && r.stock_item_id) return false;
+        return true;
+      });
+  }, [rows, calcs, search, statusFilter, linkFilter]);
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setLinkFilter('all');
+  };
+  const hasActiveFilters = !!search || statusFilter !== 'all' || linkFilter !== 'all';
 
   const updateRow = (localId: string, patch: Partial<DraftRow>) => {
     setRows((prev) =>
@@ -308,48 +339,131 @@ export default function PricingResale() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Produtos de Revenda — CV {formatPct(cvPct)} · CF {formatPct(cfPct)}
-            </CardTitle>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <CardTitle className="text-base">Produtos de Revenda</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    CV {formatPct(cvPct)} · CF {formatPct(cfPct)} · Lucro padrão {formatPct(defaultProfit)}
+                  </p>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Exibindo <span className="font-semibold text-foreground">{filteredIndexes.length}</span> de {rows.length}
+                </div>
+              </div>
+              <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar por nome do produto..."
+                    className="pl-9 h-9"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                  <SelectTrigger className="h-9 md:w-[200px]">
+                    <Filter className="w-3.5 h-3.5 mr-1 opacity-60" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os status</SelectItem>
+                    <SelectItem value="viavel">Dentro da margem</SelectItem>
+                    <SelectItem value="ajuste">Precisa de ajuste</SelectItem>
+                    <SelectItem value="informe_preco">Informe preço</SelectItem>
+                    <SelectItem value="informe_custo">Informe custo</SelectItem>
+                    <SelectItem value="config_invalida">Configuração inválida</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={linkFilter} onValueChange={(v) => setLinkFilter(v as any)}>
+                  <SelectTrigger className="h-9 md:w-[180px]">
+                    <SelectValue placeholder="Origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as origens</SelectItem>
+                    <SelectItem value="linked">Vinculados ao estoque</SelectItem>
+                    <SelectItem value="manual">Manuais</SelectItem>
+                  </SelectContent>
+                </Select>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+                    <X className="w-3.5 h-3.5 mr-1" /> Limpar
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table className="min-w-[1100px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[220px]">Produto</TableHead>
-                  <TableHead className="text-right">Custo aquisição</TableHead>
-                  <TableHead className="text-right">Embalagem</TableHead>
-                  <TableHead className="text-right">Lucro desejado %</TableHead>
-                  <TableHead className="text-right">Preço sugerido</TableHead>
-                  <TableHead className="text-right">Preço praticado</TableHead>
-                  <TableHead className="text-right">Lucro aplicado</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-right">Lucro/produto</TableHead>
-                  <TableHead className="text-right">CMV</TableHead>
-                  <TableHead className="w-[110px] text-right">Ações</TableHead>
+          <CardContent className="overflow-x-auto p-0">
+            <Table className="min-w-[1280px]">
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent border-b-2">
+                  <TableHead className="sticky left-0 z-10 bg-muted/40 min-w-[260px] py-3 px-4 text-xs uppercase tracking-wide">
+                    Produto
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide border-l border-border/60">
+                    Custo aquisição
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide">
+                    Embalagem
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide">
+                    Lucro desejado %
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide border-l border-border/60 bg-primary/5">
+                    Preço sugerido
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide bg-primary/5">
+                    Preço praticado
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide border-l border-border/60">
+                    Lucro aplicado
+                  </TableHead>
+                  <TableHead className="text-center py-3 px-3 text-xs uppercase tracking-wide">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide">
+                    Lucro/produto
+                  </TableHead>
+                  <TableHead className="text-right py-3 px-3 text-xs uppercase tracking-wide">
+                    CMV
+                  </TableHead>
+                  <TableHead className="w-[110px] text-right py-3 px-3 text-xs uppercase tracking-wide border-l border-border/60">
+                    Ações
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading && rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-10">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-10">
                       Nenhum produto. Clique em "Nova linha" para começar.
                     </TableCell>
                   </TableRow>
+                ) : filteredIndexes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-10">
+                      Nenhum produto encontrado com os filtros aplicados.
+                    </TableCell>
+                  </TableRow>
                 ) : (
-                  rows.map((row, idx) => {
-                    const c = calcs[idx];
+                  filteredIndexes.map(({ r: row, idx, c }, viewIdx) => {
                     const meta = STATUS_META[c.status];
                     const linkedItem = stockItems.find((i) => i.id === row.stock_item_id);
                     return (
-                      <TableRow key={row._localId}>
-                        <TableCell>
+                      <TableRow
+                        key={row._localId}
+                        className={cn(
+                          'group transition-colors',
+                          viewIdx % 2 === 1 && 'bg-muted/20',
+                        )}
+                      >
+                        <TableCell className="sticky left-0 z-10 bg-inherit py-3 px-4 align-top">
                           <div className="flex flex-col gap-1">
                             <Popover
                               open={pickerOpen === row._localId}
@@ -360,7 +474,7 @@ export default function PricingResale() {
                                   variant="outline"
                                   role="combobox"
                                   size="sm"
-                                  className="w-full justify-between font-normal"
+                                  className="w-full justify-between font-medium"
                                 >
                                   <span className="truncate">
                                     {row.product_name || 'Selecionar produto...'}
@@ -425,9 +539,10 @@ export default function PricingResale() {
                               />
                             )}
                             {linkedItem && (
-                              <span className="text-[10px] text-muted-foreground">
-                                Estoque: {linkedItem.name} · {formatBRL(Number(linkedItem.value) || 0)}/{linkedItem.unit}
-                              </span>
+                              <Badge variant="outline" className="self-start text-[10px] font-normal gap-1 border-primary/30 bg-primary/5 text-primary">
+                                <Check className="w-3 h-3" />
+                                Vinculado · {formatBRL(Number(linkedItem.value) || 0)}/{linkedItem.unit}
+                              </Badge>
                             )}
                           </div>
                         </TableCell>
@@ -437,6 +552,7 @@ export default function PricingResale() {
                           displayValue={linkedItem ? Number(linkedItem.value) || 0 : undefined}
                           disabled={!!linkedItem}
                           title={linkedItem ? 'Vinculado ao estoque — preço atualizado automaticamente' : undefined}
+                          highlight="left"
                         />
                         <NumberCell
                           value={row.packaging_cost}
@@ -449,11 +565,11 @@ export default function PricingResale() {
                             updateRow(row._localId, { desired_profit_percentage: v })
                           }
                         />
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-right font-semibold py-3 px-3 border-l border-border/60 bg-primary/5">
                           {c.configInvalid ? (
                             <span className="text-destructive text-xs">inválido</span>
                           ) : c.suggestedPrice > 0 ? (
-                            formatBRL(c.suggestedPrice)
+                            <span className="text-primary">{formatBRL(c.suggestedPrice)}</span>
                           ) : (
                             '-'
                           )}
@@ -461,16 +577,23 @@ export default function PricingResale() {
                         <NumberCell
                           value={row.practiced_price}
                           onChange={(v) => updateRow(row._localId, { practiced_price: v })}
+                          highlight="primary"
                         />
-                        <TableCell className="text-right">{formatPct(c.appliedProfitPct)}</TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className={cn(
+                          'text-right font-medium py-3 px-3 border-l border-border/60',
+                          c.status === 'viavel' && 'text-emerald-600',
+                          c.status === 'ajuste' && 'text-amber-600',
+                        )}>
+                          {formatPct(c.appliedProfitPct)}
+                        </TableCell>
+                        <TableCell className="text-center py-3 px-3">
                           <Badge variant={meta.variant} className={meta.className}>
                             {meta.label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">{formatBRL(c.profitValue)}</TableCell>
-                        <TableCell className="text-right">{formatPct(c.cmvPct)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right py-3 px-3 tabular-nums">{formatBRL(c.profitValue)}</TableCell>
+                        <TableCell className="text-right py-3 px-3 tabular-nums text-muted-foreground">{formatPct(c.cmvPct)}</TableCell>
+                        <TableCell className="text-right py-3 px-3 border-l border-border/60">
                           <div className="flex justify-end gap-1">
                             <Button
                               size="icon"
@@ -478,6 +601,7 @@ export default function PricingResale() {
                               onClick={() => saveRow(row)}
                               disabled={!row._dirty || upsertMutation.isPending}
                               title="Salvar linha"
+                              className={cn(row._dirty && 'text-primary')}
                             >
                               <Save className="w-4 h-4" />
                             </Button>
@@ -538,6 +662,7 @@ function NumberCell({
   displayValue,
   disabled,
   title,
+  highlight,
 }: {
   value: number;
   onChange: (v: number) => void;
@@ -545,6 +670,7 @@ function NumberCell({
   displayValue?: number;
   disabled?: boolean;
   title?: string;
+  highlight?: 'left' | 'primary';
 }) {
   const shown = displayValue !== undefined ? displayValue : value;
   const [local, setLocal] = useState<string>(String(shown ?? 0));
@@ -552,7 +678,11 @@ function NumberCell({
     setLocal(String(shown ?? 0));
   }, [shown]);
   return (
-    <TableCell className="text-right">
+    <TableCell className={cn(
+      'text-right py-3 px-3',
+      highlight === 'left' && 'border-l border-border/60',
+      highlight === 'primary' && 'bg-primary/5',
+    )}>
       <Input
         type="number"
         step={step}
@@ -566,7 +696,7 @@ function NumberCell({
         disabled={disabled}
         readOnly={disabled}
         title={title}
-        className="h-8 text-right disabled:opacity-70 disabled:cursor-not-allowed"
+        className="h-9 text-right tabular-nums font-medium disabled:opacity-70 disabled:cursor-not-allowed disabled:bg-muted/40"
       />
     </TableCell>
   );
