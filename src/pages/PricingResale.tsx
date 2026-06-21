@@ -535,27 +535,38 @@ function NumberCell({
   value,
   onChange,
   step = 0.01,
+  displayValue,
+  disabled,
+  title,
 }: {
   value: number;
   onChange: (v: number) => void;
   step?: number;
+  displayValue?: number;
+  disabled?: boolean;
+  title?: string;
 }) {
-  const [local, setLocal] = useState<string>(String(value ?? 0));
+  const shown = displayValue !== undefined ? displayValue : value;
+  const [local, setLocal] = useState<string>(String(shown ?? 0));
   useEffect(() => {
-    setLocal(String(value ?? 0));
-  }, [value]);
+    setLocal(String(shown ?? 0));
+  }, [shown]);
   return (
     <TableCell className="text-right">
       <Input
         type="number"
         step={step}
         value={local}
-        onChange={(e) => setLocal(e.target.value)}
+        onChange={(e) => !disabled && setLocal(e.target.value)}
         onBlur={() => {
+          if (disabled) return;
           const n = parseFloat(local.replace(',', '.'));
           onChange(isNaN(n) ? 0 : n);
         }}
-        className="h-8 text-right"
+        disabled={disabled}
+        readOnly={disabled}
+        title={title}
+        className="h-8 text-right disabled:opacity-70 disabled:cursor-not-allowed"
       />
     </TableCell>
   );
