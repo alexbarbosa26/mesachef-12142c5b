@@ -29,6 +29,7 @@ import { Plus, Save, Trash2, Check, ChevronsUpDown, Lock, ShoppingBag } from 'lu
 import { useAuth } from '@/contexts/AuthContext';
 import { useStockData } from '@/hooks/useStockData';
 import { usePricingConfigGlobal } from '@/hooks/usePricingData';
+import { usePricingVariableCosts } from '@/hooks/usePricingCosts';
 import {
   useResaleProducts,
   useUpsertResaleProduct,
@@ -87,10 +88,17 @@ export default function PricingResale() {
   const { data: products = [], isLoading } = useResaleProducts();
   const { data: globalConfig } = usePricingConfigGlobal();
   const { stockItems } = useStockData();
+  const { data: variableCosts = [] } = usePricingVariableCosts();
   const upsertMutation = useUpsertResaleProduct();
   const deleteMutation = useDeleteResaleProduct();
 
-  const cvPct = globalConfig?.variable_expenses_pct ?? 0;
+  // Soma ao vivo dos custos variáveis ativos (mesma lógica do GlobalConfigForm),
+  // com fallback no valor salvo em pricing_config_global caso ainda não haja itens cadastrados.
+  const liveVariablePct = useMemo(
+    () => variableCosts.filter((c) => c.is_active).reduce((s, c) => s + Number(c.percentage || 0), 0),
+    [variableCosts],
+  );
+  const cvPct = liveVariablePct > 0 ? liveVariablePct : (globalConfig?.variable_expenses_pct ?? 0);
   const cfPct = globalConfig?.fixed_expenses_pct ?? 0;
   const defaultProfit = globalConfig?.profit_pct ?? 0;
 
