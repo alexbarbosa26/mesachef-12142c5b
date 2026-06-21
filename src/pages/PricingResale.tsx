@@ -225,7 +225,7 @@ export default function PricingResale() {
     updateRow(row._localId, {
       stock_item_id: item.id,
       product_name: item.name,
-      acquisition_cost: row.acquisition_cost > 0 ? row.acquisition_cost : Number(item.value) || 0,
+      acquisition_cost: Number(item.value) || 0,
     });
     setPickerOpen(null);
   };
