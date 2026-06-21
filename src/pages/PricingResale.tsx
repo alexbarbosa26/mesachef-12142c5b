@@ -118,8 +118,19 @@ export default function PricingResale() {
   );
 
   const calcs = useMemo(
-    () => rows.map((r) => calculateResale(r, cvPct, cfPct)),
-    [rows, cvPct, cfPct],
+    () =>
+      rows.map((r) => {
+        const linked = r.stock_item_id
+          ? stockItems.find((i) => i.id === r.stock_item_id)
+          : null;
+        const effectiveAcq = linked ? Number(linked.value) || 0 : r.acquisition_cost;
+        return calculateResale(
+          { ...r, acquisition_cost: effectiveAcq },
+          cvPct,
+          cfPct,
+        );
+      }),
+    [rows, cvPct, cfPct, stockItems],
   );
 
   const summary = useMemo(() => {
@@ -186,11 +197,15 @@ export default function PricingResale() {
       toast({ title: 'Informe o produto', variant: 'destructive' });
       return;
     }
+    const linked = row.stock_item_id
+      ? stockItems.find((i) => i.id === row.stock_item_id)
+      : null;
+    const effectiveAcq = linked ? Number(linked.value) || 0 : row.acquisition_cost;
     await upsertMutation.mutateAsync({
       id: row.id,
       stock_item_id: row.stock_item_id,
       product_name: row.product_name.trim(),
-      acquisition_cost: row.acquisition_cost,
+      acquisition_cost: effectiveAcq,
       packaging_cost: row.packaging_cost,
       desired_profit_percentage: row.desired_profit_percentage,
       practiced_price: row.practiced_price,
@@ -201,11 +216,15 @@ export default function PricingResale() {
   const saveAll = async () => {
     const dirty = rows.filter((r) => r._dirty && r.product_name.trim());
     for (const r of dirty) {
+      const linked = r.stock_item_id
+        ? stockItems.find((i) => i.id === r.stock_item_id)
+        : null;
+      const effectiveAcq = linked ? Number(linked.value) || 0 : r.acquisition_cost;
       await upsertMutation.mutateAsync({
         id: r.id,
         stock_item_id: r.stock_item_id,
         product_name: r.product_name.trim(),
-        acquisition_cost: r.acquisition_cost,
+        acquisition_cost: effectiveAcq,
         packaging_cost: r.packaging_cost,
         desired_profit_percentage: r.desired_profit_percentage,
         practiced_price: r.practiced_price,
@@ -415,6 +434,9 @@ export default function PricingResale() {
                         <NumberCell
                           value={row.acquisition_cost}
                           onChange={(v) => updateRow(row._localId, { acquisition_cost: v })}
+                          displayValue={linkedItem ? Number(linkedItem.value) || 0 : undefined}
+                          disabled={!!linkedItem}
+                          title={linkedItem ? 'Vinculado ao estoque — preço atualizado automaticamente' : undefined}
                         />
                         <NumberCell
                           value={row.packaging_cost}
