@@ -466,9 +466,10 @@ const StockPurchases = () => {
                       return (
                         <TableRow key={purchase.id}>
                           <TableCell className="whitespace-nowrap">
-                            {format(new Date(purchase.purchase_date), 'dd/MM/yyyy', {
-                              locale: ptBR,
-                            })}
+                            {(() => {
+                              const [y, m, d] = purchase.purchase_date.split('-').map(Number);
+                              return format(new Date(y, m - 1, d), 'dd/MM/yyyy', { locale: ptBR });
+                            })()}
                           </TableCell>
                           <TableCell className="font-medium">
                             {item?.name || 'Item removido'}
