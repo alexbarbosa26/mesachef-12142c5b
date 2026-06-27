@@ -383,6 +383,16 @@ const StockEntry = () => {
                         );
                         const lowStock = isLowStock(item.id);
                         const isEdited = editedItems.has(item.id);
+                        const usesCountUnit =
+                          !!item.count_unit &&
+                          !!item.base_unit &&
+                          item.count_unit !== item.base_unit &&
+                          Number(item.package_size) > 0;
+                        const displayUnit = usesCountUnit
+                          ? (item.count_unit as string)
+                          : item.unit;
+                        const edited = editedItems.get(item.id);
+                        const baseQty = edited?.current_quantity ?? item.current_quantity;
 
                         return (
                           <TableRow
@@ -398,11 +408,11 @@ const StockEntry = () => {
                             </TableCell>
                             <TableCell>
                               <StockStatusBadge
-                                currentQuantity={parseFloat(getDisplayValue(item.id, 'quantity')) || 0}
+                                currentQuantity={Number(baseQty) || 0}
                               />
                             </TableCell>
                             <TableCell className="text-muted-foreground">
-                              {item.unit}
+                              {displayUnit}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {item.minimum_stock}
@@ -413,19 +423,26 @@ const StockEntry = () => {
                                 lowStock && 'cell-low-stock'
                               )}
                             >
-                              <Input
-                                type="number"
-                                step="0.001"
-                                min="0"
-                                value={getDisplayValue(item.id, 'quantity')}
-                                onChange={(e) =>
-                                  handleQuantityChange(item.id, e.target.value)
-                                }
-                                onKeyDown={(e) =>
-                                  handleKeyDown(e, item.id, 'quantity')
-                                }
-                                className="h-8 w-24"
-                              />
+                              <div className="flex flex-col gap-0.5">
+                                <Input
+                                  type="number"
+                                  step="0.001"
+                                  min="0"
+                                  value={getDisplayValue(item.id, 'quantity')}
+                                  onChange={(e) =>
+                                    handleQuantityChange(item.id, e.target.value)
+                                  }
+                                  onKeyDown={(e) =>
+                                    handleKeyDown(e, item.id, 'quantity')
+                                  }
+                                  className="h-8 w-24"
+                                />
+                                {usesCountUnit && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    = {formatBaseQuantity(Number(baseQty) || 0, item.base_unit as string)}
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}
