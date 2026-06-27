@@ -35,6 +35,7 @@ import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { ExpiryBadge, getExpiryStatus } from '@/components/ExpiryBadge';
 import { StockStatusBadge } from '@/components/StockStatusBadge';
+import { toBaseQuantity, toCountQuantity, formatBaseQuantity } from '@/utils/unitConversion';
 
 interface EditedItem {
   id: string;
