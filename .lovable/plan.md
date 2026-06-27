@@ -1,133 +1,115 @@
-# Central de Lucro — Plano de Implementação
 
-Transformar o MesaChef em uma ferramenta estratégica criando um novo dashboard executivo focado em margem, CMV, desperdício e precificação. Implementação incremental, sem refatorar o que já existe.
+# Plano: Compras por Fornecedor + Unidades de Contagem vs Base
 
-## 1. Navegação e rotas
+Implementação incremental em 4 fases. Cada fase é independente e não quebra o que existe.
 
-- Renomear o item de menu atual **"Dashboard"** (rota `/dashboard` → `DashboardOverview`) para **"Gestão de Estoque"** (mantendo a rota para não quebrar links).
-- Criar nova rota `/central-lucro` apontando para `pages/CentralLucro.tsx`.
-- Adicionar item no `Sidebar.tsx` no topo: **"Central de Lucro"** (ícone `TrendingUp`) como tela principal padrão pós-login.
-- Atualizar `pages/Index.tsx` para redirecionar usuários autenticados para `/central-lucro`.
+## Fase 1 — Banco de dados (migração única)
 
-## 2. Infraestrutura compartilhada
+### Tabelas novas
 
-- Criar `src/hooks/useCurrentCompany.ts` — wrapper único sobre `profiles.company_id` do usuário logado (cacheado por React Query). Substituir gradualmente apenas onde a Central de Lucro precisar; não tocar nos hooks legados.
-- Padrão de queryKey: `['central-lucro', '<bloco>', companyId, periodo]`.
-- Todo `INSERT` novo passa `company_id` explícito (mesmo com trigger).
+**`stock_purchase_orders`** (cabeçalho da compra)
+- supplier_id, supplier_name (snapshot), purchase_date, invoice_number, notes
+- total_amount (calculado), company_id, created_by
 
-## 3. Estrutura da página `CentralLucro.tsx`
+**`stock_purchase_order_items`** (itens da compra)
+- order_id, stock_item_id
+- purchased_quantity (ex: 4)
+- purchase_unit (ex: "pacote")
+- package_size (ex: 500)
+- base_unit (ex: "g")
+- package_unit_cost (ex: 1.79)
+- total_base_quantity (gerado: purchased_quantity × package_size)
+- total_cost (gerado: purchased_quantity × package_unit_cost)
+- base_unit_cost (gerado: total_cost / total_base_quantity)
+- notes
 
-```text
-┌─────────────────────────────────────────────────┐
-│ Header: título + seletor de período (7/30/90d)  │
-├─────────────────────────────────────────────────┤
-│ [Cards executivos — grid responsivo 2/3/5 cols] │
-├─────────────────────────────────────────────────┤
-│ [Alertas inteligentes — lista priorizada]       │
-├─────────────────────────────────────────────────┤
-│ [Gráficos — grid 1/2 cols]                      │
-│  • CMV ao longo do tempo  • Compras período     │
-│  • Estoque por categoria  • Top 10 insumos      │
-│  • Gap preço atual x sugerido                   │
-├─────────────────────────────────────────────────┤
-│ [Bloco Self-Service — se houver dados]          │
-└─────────────────────────────────────────────────┘
-```
+### Campos novos em `stock_items`
+- `count_unit` text (ex: "pacote") — unidade que o staff usa para contar
+- `package_size` numeric (ex: 500) — quanto vem em cada unidade de contagem
+- `base_unit` text (kg/g/l/ml/un) — unidade para ficha técnica
 
-## 4. Cards executivos (10 KPIs)
+`unit` e `value` continuam sendo unidade BASE + custo por unidade base (fonte da verdade — fichas técnicas e pricing não mudam).
 
-Componente `ExecutiveCard` reutilizável (título, valor, variação %, ícone, cor semântica, link "ver detalhes").
+### Migração de dados existentes
+- Backfill: `count_unit = unit`, `package_size = 1`, `base_unit = unit` para todos os insumos atuais.
+- Tabela `stock_purchases` antiga: mantida como legacy read-only por enquanto (não migrada automaticamente para evitar perda). Criar view ou flag para diferenciar. Na UI nova, lista unificada (orders + legacy).
 
-| Card | Fonte |
-|---|---|
-| Valor em estoque | `stock_items` × `calculateItemTotalValue` |
-| Compras no período | `stock_purchases` filtradas por data |
-| CMV real do período | `cmv_snapshots` (último fechado) ou estimado |
-| CMV % | CMV / receita estimada |
-| Perdas e ajustes | `stock_adjustments` tipo `loss`/`waste` |
-| Sem estoque | `stock_items.current_quantity = 0` |
-| Abaixo do mínimo | `current_quantity <= minimum_stock` |
-| Próximos do vencimento | usando `ExpiryBadge` existente |
-| Preço abaixo do sugerido | `pricing_products` × cálculo SEBRAE |
-| Fichas incompletas | `technical_sheets` sem ingredientes ou CVU=0 |
+### RLS
+- Mesmas políticas das tabelas existentes (company_id + has_role).
+- GRANTs para authenticated e service_role.
 
-## 5. Cálculo de CMV (regra crítica)
+## Fase 2 — Tela "Nova Compra por Fornecedor"
 
-- Remover qualquer estimativa "% das compras".
-- Buscar último `cmv_snapshots` do período. Se existir: usar `realCMV`/`theoreticalCMV` e diferença.
-- Se não existir snapshot: calcular teórico via `calculateCMV(estoqueInicial, compras, estoqueFinal)` reutilizando `utils/cmvCalculations.ts` e renderizar `Alert` amarelo: **"CMV estimado — realize um fechamento de estoque para CMV real."**
+Em `/stock-purchases`, adicionar botão primário **"Nova Compra"** que abre dialog/página:
 
-## 6. Gráficos (Recharts)
+**Cabeçalho:**
+- Fornecedor (select com `useSuppliers`)
+- Data
+- Nº nota/cupom (opcional)
+- Observações
+- Total (calculado, read-only)
 
-- `CMVEvolutionChart` — linha, série mensal de `cmv_snapshots`.
-- `PurchasesChart` — barras por semana de `stock_purchases`.
-- `StockByCategoryChart` — pizza/barras `stock_items` agrupados por categoria.
-- `TopImpactItemsChart` — barras top 10 por `qty × value`.
-- `PriceGapChart` — barras horizontais top produtos com maior diferença preço atual vs. sugerido.
+**Itens (linhas dinâmicas, "+ Adicionar item"):**
+- Insumo (autocomplete com `useStockData`)
+- Quantidade comprada
+- Unidade de compra (pacote/caixa/unidade/garrafa/lata/bandeja/kg/g/l/ml)
+- Qtd por embalagem
+- Unidade base (kg/g/l/ml/un)
+- Valor unitário da embalagem
+- Calculados ao vivo: total do item, custo por unidade base
+- Botão remover
 
-## 7. Alertas inteligentes
+**Ao salvar:**
+1. Insert em `stock_purchase_orders` + itens.
+2. Para cada item: atualiza `stock_items.value = base_unit_cost`, soma `current_quantity` em unidade base, e atualiza `count_unit`/`package_size`/`base_unit` se vazio.
+3. Audit log.
 
-Componente `SmartAlert` (título + descrição + ação sugerida + CTA navega para origem). Regras:
+## Fase 3 — Contagem de estoque por unidade de contagem
 
-- Preço defasado (>30 dias sem atualização ou abaixo do mínimo SEBRAE).
-- Custo de insumo subiu >10% em compra recente (`stock_purchases` comparativo).
-- Vencimento em ≤7 dias.
-- Estoque crítico (zero ou <50% do mínimo).
-- CMV acima da meta de `pricing_config_global.target_cmv_pct` (ou 35% default com aviso).
-- Ficha técnica sem custo completo.
-- Divergência CMV real vs teórico > threshold.
+Em `StockEntry.tsx`, quando o insumo tem `count_unit` definido:
+- Input mostra "X pacotes" (count_unit)
+- Helper abaixo: "= 1.5 kg • R$ 5,37"
+- Internamente, salva `current_quantity = digitado × package_size` (em unidade base).
+- Quando `count_unit` = `base_unit` ou ausente, comportamento atual.
 
-Ordenar por severidade (crítico → atenção → info). Limitar 10 visíveis com "Ver todos".
+Componente helper `useUnitConversion` centraliza a lógica.
 
-## 8. Precificação
+## Fase 4 — UI: cadastro de insumo simplificado
 
-Reusar `usePricingData`, `usePricingCosts`. Calcular para cada produto: preço atual, sugerido (SEBRAE), margem. Classificar:
-- **Saudável**: margem ≥ meta
-- **Atenção**: 80–99% da meta
-- **Crítico**: <80% da meta ou prejuízo
-- **Oportunidade**: preço atual muito abaixo do sugerido (>15%)
+No formulário de insumo, perguntas didáticas:
+- "Como você compra?" → purchase_unit padrão
+- "Quanto vem dentro?" → package_size
+- "Como você conta no estoque?" → count_unit
+- "Como é usado nas fichas?" → base_unit (= `unit`)
 
-## 9. Bloco Self-Service
+Fichas técnicas e PricingResale **não mudam** — continuam lendo `stock_items.value` como custo por unidade base, que já é o convertido correto.
 
-Query em `self_service_daily_records` do período. Se 0 registros: card vazio com botão "Cadastrar primeiro dia". Caso contrário: cards com totais agregados (produzido/consumido/sobras kg, valor da sobra, preço/kg, resultado).
-
-## 10. Arquivos a criar/editar
+## Arquivos afetados
 
 **Novos:**
-- `src/pages/CentralLucro.tsx`
-- `src/hooks/useCurrentCompany.ts`
-- `src/hooks/useCentralLucroData.ts` (orquestra todas as queries do dashboard)
-- `src/components/central-lucro/ExecutiveCard.tsx`
-- `src/components/central-lucro/SmartAlert.tsx`
-- `src/components/central-lucro/PeriodSelector.tsx`
-- `src/components/central-lucro/charts/CMVEvolutionChart.tsx`
-- `src/components/central-lucro/charts/PurchasesChart.tsx`
-- `src/components/central-lucro/charts/StockByCategoryChart.tsx`
-- `src/components/central-lucro/charts/TopImpactItemsChart.tsx`
-- `src/components/central-lucro/charts/PriceGapChart.tsx`
-- `src/components/central-lucro/SelfServiceSummary.tsx`
-- `src/utils/centralLucroCalculations.ts`
+- `supabase/migrations/...` (uma migração)
+- `src/hooks/useStockPurchaseOrders.ts`
+- `src/components/stock/PurchaseOrderDialog.tsx`
+- `src/components/stock/PurchaseOrderItemRow.tsx`
+- `src/utils/unitConversion.ts` (centraliza conversões)
 
-**Editados:**
-- `src/App.tsx` — nova rota `/central-lucro`.
-- `src/components/layout/Sidebar.tsx` — novo item, renomear Dashboard → Gestão de Estoque.
-- `src/pages/Index.tsx` — redirect default.
+**Editados (mínimo):**
+- `src/pages/StockPurchases.tsx` — adiciona botão "Nova Compra" + aba/listagem de ordens
+- `src/pages/StockEntry.tsx` — input por count_unit quando aplicável
+- `src/pages/Dashboard.tsx` (form de insumo) — campos count_unit/package_size/base_unit
+- `src/integrations/supabase/types.ts` — regenerado pela migração
 
-## 11. O que NÃO será feito
+**Não tocados:** `TechnicalSheetForm`, `PricingResale`, `PricingProducts`, `usePricingCosts`, relatórios — tudo continua funcionando.
 
-- Não renomear arquivos existentes (`DashboardOverview.tsx`, `Dashboard.tsx`) — apenas o rótulo na UI.
-- Não criar migrations (todos os dados necessários já existem).
-- Não alterar páginas Pricing, Stock, CMV, Self-Service existentes.
-- Filtros avançados/exportação ficam para uma fase posterior.
+## Validação
 
-## 12. Responsividade
+- Exemplo Flocão (4×500g a R$1,79) deve gerar value=3.58, current_quantity=2 (kg) ou 2000 (g) conforme base.
+- Compras antigas continuam aparecendo no histórico.
+- Ficha técnica usando 100g de flocão custa R$0,358.
+- Multiempresa: RLS por company_id em todas as novas tabelas.
 
-Grid Tailwind `grid-cols-2 md:grid-cols-3 lg:grid-cols-5` para cards; gráficos em coluna única no mobile, 2 colunas no desktop. Reusar layout `DashboardLayout` (já tem header mobile fixo).
+## Riscos e mitigações
 
-## Detalhes técnicos (resumo para revisão)
-
-- Stack: React 18 + TS + Tailwind + shadcn + Recharts + React Query.
-- Período padrão: últimos 30 dias; seletor 7/30/90d/mês atual.
-- Todas as queries: `enabled: !!companyId` para evitar fetch antes de carregar perfil.
-- Conversão de unidades reusando `normalizeQuantityToBaseUnit`.
-- Sem hardcode de cores: tokens semânticos (`bg-destructive`, `text-success`, etc).
+- **Risco:** atualizar `stock_items.value` na compra pode mudar custo de fichas existentes. **Mitigação:** comportamento já é o atual (useStockPurchases hoje também atualiza value).
+- **Risco:** insumos legados sem `count_unit`. **Mitigação:** backfill na migração + fallback na UI (`count_unit ?? unit`).
+- **Risco:** unidade de compra incompatível com base (ex: comprou em "caixa" mas base é "kg"). **Mitigação:** package_size + base_unit resolvem (1 caixa = 5000 g).
