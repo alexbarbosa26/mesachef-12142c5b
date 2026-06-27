@@ -447,7 +447,7 @@ const StockPurchases = () => {
         {/* Purchases Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Histórico de Compras</CardTitle>
+            <CardTitle>Histórico de Lançamentos Avulsos</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredPurchases.length === 0 ? (
@@ -516,6 +516,104 @@ const StockPurchases = () => {
                     })}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Compras por Fornecedor (multi-item) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Compras por Fornecedor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {orders.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma compra por fornecedor registrada
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {orders.map((order) => {
+                  const [y, m, d] = order.purchase_date.split('-').map(Number);
+                  return (
+                    <details key={order.id} className="border rounded-lg group">
+                      <summary className="cursor-pointer p-3 flex items-center justify-between hover:bg-muted/30">
+                        <div className="flex-1">
+                          <div className="font-semibold">
+                            {order.supplier_name || 'Sem fornecedor'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(y, m - 1, d), 'dd/MM/yyyy', { locale: ptBR })}
+                            {order.invoice_number && ` • NF ${order.invoice_number}`}
+                            {' • '}
+                            {order.items?.length || 0} item(ns)
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-xs text-muted-foreground">Total</div>
+                            <div className="font-bold">
+                              {formatCurrency(Number(order.total_amount) || 0)}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (confirm('Excluir esta compra? O estoque já lançado não será revertido automaticamente.')) {
+                                deleteOrder(order.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </summary>
+                      <div className="border-t bg-muted/10">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Insumo</TableHead>
+                              <TableHead>Qtd. comprada</TableHead>
+                              <TableHead>Equivalente</TableHead>
+                              <TableHead>Valor embalagem</TableHead>
+                              <TableHead>Custo/un. base</TableHead>
+                              <TableHead>Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(order.items || []).map((it) => (
+                              <TableRow key={it.id}>
+                                <TableCell className="font-medium">{it.item_name}</TableCell>
+                                <TableCell>
+                                  {it.purchased_quantity} {it.purchase_unit}
+                                  {it.package_size > 1 && ` × ${it.package_size}${it.base_unit}`}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {formatBaseQuantity(Number(it.total_base_quantity) || 0, it.base_unit)}
+                                </TableCell>
+                                <TableCell>{formatCurrency(Number(it.package_unit_cost) || 0)}</TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {formatCurrency(Number(it.base_unit_cost) || 0)}/{it.base_unit}
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  {formatCurrency(Number(it.total_cost) || 0)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {order.notes && (
+                          <div className="px-3 py-2 text-xs text-muted-foreground border-t">
+                            Obs: {order.notes}
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  );
+                })}
               </div>
             )}
           </CardContent>
