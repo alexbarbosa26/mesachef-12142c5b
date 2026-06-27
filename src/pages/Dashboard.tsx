@@ -90,6 +90,9 @@ const Dashboard = () => {
     value: '',
     minimum_stock: '0',
     category_id: '',
+    count_unit: '',
+    package_size: '1',
+    base_unit: 'kg',
   });
   const [expiryAlertDays, setExpiryAlertDays] = useState(
     settings.expiry_alert_days.toString()
@@ -116,20 +119,27 @@ const Dashboard = () => {
 
   const handleAddItem = async () => {
     if (!newItem.name.trim() || !newItem.category_id) return;
+    const usesCount = !!newItem.count_unit && newItem.count_unit !== newItem.base_unit;
     await addStockItem({
       name: newItem.name.trim(),
-      unit: newItem.unit,
+      unit: newItem.base_unit || newItem.unit,
       value: newItem.value ? parseFloat(newItem.value) : null,
       minimum_stock: parseFloat(newItem.minimum_stock) || 0,
       category_id: newItem.category_id,
       current_quantity: 0,
-    });
+      count_unit: usesCount ? newItem.count_unit : newItem.base_unit || newItem.unit,
+      package_size: usesCount ? parseFloat(newItem.package_size) || 1 : 1,
+      base_unit: newItem.base_unit || newItem.unit,
+    } as any);
     setNewItem({
       name: '',
       unit: 'kg',
       value: '',
       minimum_stock: '0',
       category_id: '',
+      count_unit: '',
+      package_size: '1',
+      base_unit: 'kg',
     });
     setItemDialogOpen(false);
   };
