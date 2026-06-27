@@ -104,12 +104,23 @@ const StockEntry = () => {
     const item = stockItems.find((i) => i.id === id);
     if (!item) return;
 
+    // Se o usuário está contando por unidade de contagem (ex: pacote),
+    // converte para unidade base (ex: g) antes de salvar.
+    const usesCountUnit =
+      !!item.count_unit &&
+      !!item.base_unit &&
+      item.count_unit !== item.base_unit &&
+      Number(item.package_size) > 0;
+    const baseValue = usesCountUnit
+      ? toBaseQuantity(numValue, Number(item.package_size) || 1)
+      : numValue;
+
     setEditedItems((prev) => {
       const newMap = new Map(prev);
       const existing = newMap.get(id);
       newMap.set(id, {
         id,
-        current_quantity: numValue,
+        current_quantity: baseValue,
         expiry_date: existing?.expiry_date ?? item.expiry_date,
       });
       return newMap;
@@ -216,7 +227,21 @@ const StockEntry = () => {
     const edited = editedItems.get(itemId);
 
     if (field === 'quantity') {
-      return (edited?.current_quantity ?? item.current_quantity).toString();
+      const baseQty = edited?.current_quantity ?? item.current_quantity;
+      const usesCountUnit =
+        !!item.count_unit &&
+        !!item.base_unit &&
+        item.count_unit !== item.base_unit &&
+        Number(item.package_size) > 0;
+      if (usesCountUnit) {
+        const countQty = toCountQuantity(
+          Number(baseQty) || 0,
+          Number(item.package_size) || 1,
+        );
+        // até 3 casas, removendo zeros à direita
+        return Number(countQty.toFixed(3)).toString();
+      }
+      return baseQty.toString();
     } else {
       return edited?.expiry_date ?? item.expiry_date ?? '';
     }
