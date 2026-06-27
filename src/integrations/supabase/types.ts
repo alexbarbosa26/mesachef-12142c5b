@@ -995,9 +995,11 @@ export type Database = {
       }
       stock_items: {
         Row: {
+          base_unit: string | null
           category_id: string
           company_id: string | null
           count_date: string | null
+          count_unit: string | null
           created_at: string
           current_quantity: number
           expiry_date: string | null
@@ -1005,15 +1007,18 @@ export type Database = {
           is_active: boolean
           minimum_stock: number
           name: string
+          package_size: number
           responsible_user: string | null
           unit: string
           updated_at: string
           value: number | null
         }
         Insert: {
+          base_unit?: string | null
           category_id: string
           company_id?: string | null
           count_date?: string | null
+          count_unit?: string | null
           created_at?: string
           current_quantity?: number
           expiry_date?: string | null
@@ -1021,15 +1026,18 @@ export type Database = {
           is_active?: boolean
           minimum_stock?: number
           name: string
+          package_size?: number
           responsible_user?: string | null
           unit?: string
           updated_at?: string
           value?: number | null
         }
         Update: {
+          base_unit?: string | null
           category_id?: string
           company_id?: string | null
           count_date?: string | null
+          count_unit?: string | null
           created_at?: string
           current_quantity?: number
           expiry_date?: string | null
@@ -1037,6 +1045,7 @@ export type Database = {
           is_active?: boolean
           minimum_stock?: number
           name?: string
+          package_size?: number
           responsible_user?: string | null
           unit?: string
           updated_at?: string
@@ -1055,6 +1064,125 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_purchase_order_items: {
+        Row: {
+          base_unit: string
+          base_unit_cost: number | null
+          company_id: string | null
+          created_at: string
+          id: string
+          item_name: string
+          notes: string | null
+          order_id: string
+          package_size: number
+          package_unit_cost: number
+          purchase_unit: string
+          purchased_quantity: number
+          stock_item_id: string | null
+          total_base_quantity: number | null
+          total_cost: number | null
+        }
+        Insert: {
+          base_unit?: string
+          base_unit_cost?: number | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          item_name: string
+          notes?: string | null
+          order_id: string
+          package_size?: number
+          package_unit_cost?: number
+          purchase_unit?: string
+          purchased_quantity?: number
+          stock_item_id?: string | null
+          total_base_quantity?: number | null
+          total_cost?: number | null
+        }
+        Update: {
+          base_unit?: string
+          base_unit_cost?: number | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          item_name?: string
+          notes?: string | null
+          order_id?: string
+          package_size?: number
+          package_unit_cost?: number
+          purchase_unit?: string
+          purchased_quantity?: number
+          stock_item_id?: string | null
+          total_base_quantity?: number | null
+          total_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_purchase_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stock_purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_purchase_order_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_purchase_orders: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          purchase_date: string
+          supplier_id: string | null
+          supplier_name: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          purchase_date?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          purchase_date?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
