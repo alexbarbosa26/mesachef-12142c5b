@@ -46,12 +46,17 @@ import { formatCurrency } from '@/utils/cmvCalculations';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { Link } from 'react-router-dom';
+import PurchaseOrderDialog from '@/components/stock/PurchaseOrderDialog';
+import { useStockPurchaseOrders } from '@/hooks/useStockPurchaseOrders';
+import { formatBaseQuantity } from '@/utils/unitConversion';
 
 const StockPurchases = () => {
   const { purchases, loading, addPurchase, deletePurchase, updatePurchase } = useStockPurchases();
   const { stockItems, categories } = useStockData();
   const { suppliers, addSupplier } = useSuppliers();
   const { user } = useAuth();
+  const { orders, deleteOrder } = useStockPurchaseOrders();
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [quickSupplierOpen, setQuickSupplierOpen] = useState(false);
@@ -176,9 +181,9 @@ const StockPurchases = () => {
           </div>
           <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
             <DialogTrigger asChild>
-              <Button>
+              <Button variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
-                Nova Compra
+                Lançamento Avulso
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
