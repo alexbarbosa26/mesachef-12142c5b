@@ -371,6 +371,11 @@ const StockPurchases = () => {
               </form>
             </DialogContent>
           </Dialog>
+          <Button onClick={() => setOrderDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Compra por Fornecedor
+          </Button>
+          <PurchaseOrderDialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen} />
         </div>
 
         {/* Summary Cards */}
