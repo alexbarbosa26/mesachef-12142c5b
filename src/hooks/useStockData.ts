@@ -21,6 +21,9 @@ export interface StockItem {
   expiry_date: string | null;
   responsible_user: string | null;
   is_active: boolean;
+  count_unit?: string | null;
+  package_size?: number | null;
+  base_unit?: string | null;
 }
 
 export interface StockItemWithCategory extends StockItem {
