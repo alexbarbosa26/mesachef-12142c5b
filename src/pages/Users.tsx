@@ -343,6 +343,28 @@ const Users = () => {
                   </Select>
                 </div>
 
+                {isSuperadmin && (
+                  <div className="space-y-2">
+                    <Label>Empresa</Label>
+                    <Select
+                      value={newUser.company_id || '__none__'}
+                      onValueChange={(v) =>
+                        setNewUser({ ...newUser, company_id: v === '__none__' ? '' : v })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sem empresa (superadmin global)</SelectItem>
+                        {companies.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <Button
                   onClick={handleCreateUser}
                   className="w-full"
