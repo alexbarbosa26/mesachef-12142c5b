@@ -78,6 +78,7 @@ const Users = () => {
     password: '',
     full_name: '',
     role: 'staff' as 'admin' | 'staff',
+    company_id: '' as string,
   });
 
   useEffect(() => {
@@ -168,6 +169,7 @@ const Users = () => {
           password: newUser.password,
           full_name: newUser.full_name,
           role: newUser.role,
+          ...(isSuperadmin ? { company_id: newUser.company_id || null } : {}),
         },
       });
 
@@ -195,6 +197,7 @@ const Users = () => {
         password: '',
         full_name: '',
         role: 'staff',
+        company_id: '',
       });
       setDialogOpen(false);
 
@@ -339,6 +342,28 @@ const Users = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {isSuperadmin && (
+                  <div className="space-y-2">
+                    <Label>Empresa</Label>
+                    <Select
+                      value={newUser.company_id || '__none__'}
+                      onValueChange={(v) =>
+                        setNewUser({ ...newUser, company_id: v === '__none__' ? '' : v })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sem empresa (superadmin global)</SelectItem>
+                        {companies.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <Button
                   onClick={handleCreateUser}

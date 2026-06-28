@@ -191,37 +191,31 @@ serve(async (req) => {
       }
     }
 
-    // Update role if provided
+    // Update role if provided.
+    // A user may have multiple rows in user_roles; replace them with the single
+    // requested role to keep the UI source-of-truth consistent.
     if (role !== undefined) {
-      const { data: existingRole } = await adminClient
+      const { error: deleteRolesError } = await adminClient
         .from("user_roles")
-        .select("id")
-        .eq("user_id", user_id)
-        .maybeSingle();
+        .delete()
+        .eq("user_id", user_id);
 
-      if (existingRole) {
-        const { error: roleUpdateError } = await adminClient
-          .from("user_roles")
-          .update({ role })
-          .eq("user_id", user_id);
+      if (deleteRolesError) {
+        return new Response(
+          JSON.stringify({ error: getSafeErrorMessage(deleteRolesError) }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-        if (roleUpdateError) {
-          return new Response(
-            JSON.stringify({ error: getSafeErrorMessage(roleUpdateError) }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      } else {
-        const { error: roleInsertError } = await adminClient
-          .from("user_roles")
-          .insert({ user_id, role });
+      const { error: roleInsertError } = await adminClient
+        .from("user_roles")
+        .insert({ user_id, role });
 
-        if (roleInsertError) {
-          return new Response(
-            JSON.stringify({ error: getSafeErrorMessage(roleInsertError) }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+      if (roleInsertError) {
+        return new Response(
+          JSON.stringify({ error: getSafeErrorMessage(roleInsertError) }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
