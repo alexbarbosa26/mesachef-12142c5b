@@ -78,6 +78,7 @@ const Users = () => {
     password: '',
     full_name: '',
     role: 'staff' as 'admin' | 'staff',
+    company_id: '' as string,
   });
 
   useEffect(() => {
@@ -168,6 +169,7 @@ const Users = () => {
           password: newUser.password,
           full_name: newUser.full_name,
           role: newUser.role,
+          ...(isSuperadmin ? { company_id: newUser.company_id || null } : {}),
         },
       });
 
@@ -195,6 +197,7 @@ const Users = () => {
         password: '',
         full_name: '',
         role: 'staff',
+        company_id: '',
       });
       setDialogOpen(false);
 
