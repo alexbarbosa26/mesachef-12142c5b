@@ -184,6 +184,7 @@ serve(async (req) => {
         .eq("user_id", user_id);
 
       if (profileError) {
+        console.error("profile update error:", profileError);
         return new Response(
           JSON.stringify({ error: getSafeErrorMessage(profileError) }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -201,6 +202,7 @@ serve(async (req) => {
         .eq("user_id", user_id);
 
       if (deleteRolesError) {
+        console.error("delete roles error:", deleteRolesError);
         return new Response(
           JSON.stringify({ error: getSafeErrorMessage(deleteRolesError) }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -212,6 +214,7 @@ serve(async (req) => {
         .insert({ user_id, role });
 
       if (roleInsertError) {
+        console.error("insert role error:", roleInsertError);
         return new Response(
           JSON.stringify({ error: getSafeErrorMessage(roleInsertError) }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
