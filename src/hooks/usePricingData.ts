@@ -388,10 +388,21 @@ export function usePricingConfigGlobal() {
       const { data, error } = await supabase
         .from('pricing_config_global')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      return data as PricingConfigGlobal;
+      if (data) return data as PricingConfigGlobal;
+
+      // Auto-seed defaults if missing (new company without config yet).
+      // company_id é preenchido pelo trigger set_company_id_on_insert.
+      // company_id é preenchido automaticamente pelo trigger set_company_id_on_insert
+      const { data: created, error: insertError } = await (supabase as any)
+        .from('pricing_config_global')
+        .insert({})
+        .select()
+        .single();
+      if (insertError) throw insertError;
+      return created as PricingConfigGlobal;
     },
     enabled: isAdmin,
   });
