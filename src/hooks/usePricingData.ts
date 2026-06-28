@@ -396,9 +396,9 @@ export function usePricingConfigGlobal() {
       // Auto-seed defaults if missing (new company without config yet).
       // company_id é preenchido pelo trigger set_company_id_on_insert.
       // company_id é preenchido automaticamente pelo trigger set_company_id_on_insert
-      const { data: created, error: insertError } = await supabase
+      const { data: created, error: insertError } = await (supabase as any)
         .from('pricing_config_global')
-        .insert({ company_id: undefined as unknown as string })
+        .insert({})
         .select()
         .single();
       if (insertError) throw insertError;
