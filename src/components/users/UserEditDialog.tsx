@@ -105,7 +105,7 @@ const UserEditDialog = ({
           ? formData.password_expiry_days
           : null,
       };
-      if (isSuperadmin) {
+      if (isSuperadmin && (formData.company_id || null) !== (user.company_id ?? null)) {
         body.company_id = formData.company_id || null;
       }
       const response = await supabase.functions.invoke('update-user', {
