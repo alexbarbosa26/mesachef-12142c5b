@@ -81,6 +81,9 @@ const Dashboard = () => {
     value: string;
     minimum_stock: string;
     category_id: string;
+    count_unit: string;
+    package_size: string;
+    base_unit: string;
   } | null>(null);
 
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -146,13 +149,21 @@ const Dashboard = () => {
 
   const handleUpdateItem = async () => {
     if (!editingItem || !editingItem.name.trim()) return;
+    const usesCount =
+      !!editingItem.count_unit &&
+      editingItem.count_unit !== editingItem.base_unit;
     await updateStockItem(editingItem.id, {
       name: editingItem.name.trim(),
-      unit: editingItem.unit,
+      unit: editingItem.base_unit || editingItem.unit,
       value: editingItem.value ? parseFloat(editingItem.value) : null,
       minimum_stock: parseFloat(editingItem.minimum_stock) || 0,
       category_id: editingItem.category_id,
-    });
+      count_unit: usesCount
+        ? editingItem.count_unit
+        : editingItem.base_unit || editingItem.unit,
+      package_size: usesCount ? parseFloat(editingItem.package_size) || 1 : 1,
+      base_unit: editingItem.base_unit || editingItem.unit,
+    } as any);
     setEditingItem(null);
     setEditingItemDialogOpen(false);
   };
