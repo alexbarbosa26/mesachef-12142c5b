@@ -81,6 +81,9 @@ const Dashboard = () => {
     value: string;
     minimum_stock: string;
     category_id: string;
+    count_unit: string;
+    package_size: string;
+    base_unit: string;
   } | null>(null);
 
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -146,13 +149,21 @@ const Dashboard = () => {
 
   const handleUpdateItem = async () => {
     if (!editingItem || !editingItem.name.trim()) return;
+    const usesCount =
+      !!editingItem.count_unit &&
+      editingItem.count_unit !== editingItem.base_unit;
     await updateStockItem(editingItem.id, {
       name: editingItem.name.trim(),
-      unit: editingItem.unit,
+      unit: editingItem.base_unit || editingItem.unit,
       value: editingItem.value ? parseFloat(editingItem.value) : null,
       minimum_stock: parseFloat(editingItem.minimum_stock) || 0,
       category_id: editingItem.category_id,
-    });
+      count_unit: usesCount
+        ? editingItem.count_unit
+        : editingItem.base_unit || editingItem.unit,
+      package_size: usesCount ? parseFloat(editingItem.package_size) || 1 : 1,
+      base_unit: editingItem.base_unit || editingItem.unit,
+    } as any);
     setEditingItem(null);
     setEditingItemDialogOpen(false);
   };
@@ -784,6 +795,12 @@ const Dashboard = () => {
                                               minimum_stock:
                                                 item.minimum_stock.toString(),
                                               category_id: item.category_id,
+                                              count_unit:
+                                                (item as any).count_unit || '',
+                                              package_size:
+                                                ((item as any).package_size ?? 1).toString(),
+                                              base_unit:
+                                                (item as any).base_unit || item.unit,
                                             });
                                             setEditingItemDialogOpen(true);
                                           }}
@@ -908,6 +925,70 @@ const Dashboard = () => {
                                                 )
                                               }
                                             />
+                                          </div>
+                                          <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+                                            <div className="text-xs font-semibold text-muted-foreground uppercase">
+                                              Contagem por embalagem (opcional)
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                              Use quando contar o estoque numa unidade diferente da
+                                              unidade de cálculo (ex: contar por{' '}
+                                              <strong>pacote</strong>, mas calcular em{' '}
+                                              <strong>g/kg</strong>).
+                                            </p>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div>
+                                                <Label className="text-xs mb-1">Como conta?</Label>
+                                                <Input
+                                                  placeholder="pacote, caixa..."
+                                                  value={editingItem?.count_unit || ''}
+                                                  onChange={(e) =>
+                                                    setEditingItem((prev) =>
+                                                      prev
+                                                        ? { ...prev, count_unit: e.target.value }
+                                                        : null
+                                                    )
+                                                  }
+                                                />
+                                              </div>
+                                              <div>
+                                                <Label className="text-xs mb-1">Conteúdo</Label>
+                                                <Input
+                                                  type="number"
+                                                  step="0.001"
+                                                  value={editingItem?.package_size || ''}
+                                                  onChange={(e) =>
+                                                    setEditingItem((prev) =>
+                                                      prev
+                                                        ? { ...prev, package_size: e.target.value }
+                                                        : null
+                                                    )
+                                                  }
+                                                />
+                                              </div>
+                                              <div>
+                                                <Label className="text-xs mb-1">Unid. base</Label>
+                                                <Select
+                                                  value={editingItem?.base_unit || 'kg'}
+                                                  onValueChange={(v) =>
+                                                    setEditingItem((prev) =>
+                                                      prev ? { ...prev, base_unit: v } : null
+                                                    )
+                                                  }
+                                                >
+                                                  <SelectTrigger>
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {['kg', 'g', 'l', 'ml', 'un'].map((u) => (
+                                                      <SelectItem key={u} value={u}>
+                                                        {u}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            </div>
                                           </div>
                                           <Button
                                             onClick={handleUpdateItem}
