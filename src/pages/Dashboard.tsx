@@ -795,6 +795,12 @@ const Dashboard = () => {
                                               minimum_stock:
                                                 item.minimum_stock.toString(),
                                               category_id: item.category_id,
+                                              count_unit:
+                                                (item as any).count_unit || '',
+                                              package_size:
+                                                ((item as any).package_size ?? 1).toString(),
+                                              base_unit:
+                                                (item as any).base_unit || item.unit,
                                             });
                                             setEditingItemDialogOpen(true);
                                           }}
